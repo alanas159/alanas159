@@ -47,7 +47,10 @@ export enum ZombieType {
   WALKER = 'walker',
   RUNNER = 'runner',
   KNIGHT = 'knight',
-  PLAGUE_BEARER = 'plague_bearer'
+  PLAGUE_BEARER = 'plague_bearer',
+  BERSERKER = 'berserker',
+  TANK = 'tank',
+  PLAGUE_LORD = 'plague_lord' // Boss
 }
 
 // Game configuration

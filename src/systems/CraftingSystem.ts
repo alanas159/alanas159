@@ -129,7 +129,7 @@ export const WEAPON_RECIPES: ItemRecipe[] = [
     description: 'Basic melee weapon',
     itemType: 'weapon',
     cost: { [ResourceType.WOOD]: 3 },
-    damage: 10,
+    damage: 12,
     durability: 50
   },
   {
@@ -142,24 +142,53 @@ export const WEAPON_RECIPES: ItemRecipe[] = [
     durability: 40
   },
   {
+    id: 'stone_axe',
+    name: 'Stone Axe',
+    description: 'Crude but effective axe',
+    itemType: 'weapon',
+    cost: { [ResourceType.WOOD]: 2, [ResourceType.STONE]: 5 },
+    damage: 20,
+    durability: 80
+  },
+  {
     id: 'iron_sword',
     name: 'Iron Sword',
     description: 'Reliable iron blade',
     itemType: 'weapon',
     cost: { [ResourceType.IRON]: 5, [ResourceType.WOOD]: 2 },
     unlockDay: 10,
-    damage: 25,
-    durability: 100
+    damage: 30,
+    durability: 150
   },
   {
-    id: 'iron_shield',
-    name: 'Iron Shield',
-    description: 'Provides defense bonus',
-    itemType: 'shield',
-    cost: { [ResourceType.IRON]: 8, [ResourceType.WOOD]: 3 },
+    id: 'iron_axe',
+    name: 'Iron Axe',
+    description: 'Heavy iron axe',
+    itemType: 'weapon',
+    cost: { [ResourceType.IRON]: 6, [ResourceType.WOOD]: 3 },
     unlockDay: 10,
-    defense: 15,
-    durability: 120
+    damage: 35,
+    durability: 140
+  },
+  {
+    id: 'steel_longsword',
+    name: 'Steel Longsword',
+    description: 'Masterwork steel blade',
+    itemType: 'weapon',
+    cost: { [ResourceType.IRON]: 15, [ResourceType.WOOD]: 5 },
+    unlockDay: 25,
+    damage: 45,
+    durability: 250
+  },
+  {
+    id: 'battle_axe',
+    name: 'Battle Axe',
+    description: 'Devastating two-handed axe',
+    itemType: 'weapon',
+    cost: { [ResourceType.IRON]: 18, [ResourceType.WOOD]: 8 },
+    unlockDay: 25,
+    damage: 55,
+    durability: 220
   }
 ];
 

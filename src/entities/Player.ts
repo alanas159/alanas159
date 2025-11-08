@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
 import { PLAYER_SPEED, PLAYER_BASE_HEALTH, PLAYER_BASE_STAMINA } from '../config/GameConfig';
+import { Inventory } from '../items/Inventory';
+import { Weapon, WeaponType } from '../items/Weapon';
 
 export class Player extends Phaser.Physics.Arcade.Sprite {
   private health: number;
@@ -8,6 +10,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private maxStamina: number;
   private level: number = 1;
   private experience: number = 0;
+  private inventory: Inventory;
+  private attackCooldown: number = 0;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y, 'player');
@@ -16,6 +20,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.health = this.maxHealth;
     this.maxStamina = PLAYER_BASE_STAMINA;
     this.stamina = this.maxStamina;
+
+    this.inventory = new Inventory();
 
     scene.add.existing(this);
     scene.physics.add.existing(this);
@@ -29,10 +35,15 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
-  update(): void {
+  update(time: number, delta: number): void {
     // Regenerate stamina over time
     if (this.stamina < this.maxStamina) {
       this.stamina = Math.min(this.maxStamina, this.stamina + 0.1);
+    }
+
+    // Update attack cooldown
+    if (this.attackCooldown > 0) {
+      this.attackCooldown -= delta;
     }
   }
 
@@ -121,5 +132,57 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   getExperience(): number {
     return this.experience;
+  }
+
+  getInventory(): Inventory {
+    return this.inventory;
+  }
+
+  attack(target?: Phaser.Physics.Arcade.Sprite): boolean {
+    const weapon = this.inventory.getEquippedWeapon();
+    const attackDelay = 1000 / weapon.getAttackSpeed();
+
+    if (this.attackCooldown > 0) {
+      return false; // Still on cooldown
+    }
+
+    // Check stamina
+    const staminaCost = 5;
+    if (!this.useStamina(staminaCost)) {
+      return false;
+    }
+
+    this.attackCooldown = attackDelay;
+
+    // Visual attack animation
+    const angle = target ? Phaser.Math.Angle.Between(this.x, this.y, target.x, target.y) : 0;
+    this.scene.tweens.add({
+      targets: this,
+      scaleX: 1.2,
+      scaleY: 1.2,
+      duration: 100,
+      yoyo: true
+    });
+
+    // Use weapon durability
+    if (!weapon.use() && weapon.isBroken()) {
+      this.scene.events.emit('weaponBroken', weapon);
+      // Revert to fists
+      this.inventory.equipWeapon(new Weapon(WeaponType.FISTS));
+    }
+
+    return true;
+  }
+
+  canAttack(): boolean {
+    return this.attackCooldown <= 0;
+  }
+
+  getAttackRange(): number {
+    return this.inventory.getEquippedWeapon().getRange();
+  }
+
+  getAttackDamage(): number {
+    return this.inventory.getEquippedWeapon().getDamage();
   }
 }
