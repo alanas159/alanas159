@@ -1,6 +1,10 @@
-import { GameState, Player, Resources, GameConfig, City, Unit, Tile } from '../types';
+import { GameState, Player, Resources, GameConfig, City, Unit, Tile, BuildingType, UnitType } from '../types';
 import { MapGenerator } from '../map/MapGenerator';
 import { CIVILIZATIONS } from '../civilizations/CivilizationData';
+import { Pathfinding } from './Pathfinding';
+import { CombatSystem } from './CombatSystem';
+import { getTechnologyById, canResearch } from './TechnologyData';
+import { getBuildingByType, canBuildBuilding } from './BuildingData';
 
 export class GameStateManager {
   private state: GameState;
@@ -17,7 +21,9 @@ export class GameStateManager {
       map: [],
       config,
       selectedTile: null,
-      selectedUnit: null
+      selectedUnit: null,
+      selectedCity: null,
+      notifications: []
     };
   }
 
@@ -64,7 +70,9 @@ export class GameStateManager {
       units: [],
       territories: [],
       era: 'antiquity',
-      isAI
+      isAI,
+      technologies: [],
+      currentResearch: undefined
     };
   }
 
@@ -155,7 +163,9 @@ export class GameStateManager {
         science: 1,
         culture: 1
       },
-      isCapital
+      isCapital,
+      buildings: [],
+      currentProduction: undefined
     };
 
     tile.cityId = city.id;
@@ -200,6 +210,14 @@ export class GameStateManager {
         player.resources[resource as keyof Resources] += amount;
       });
 
+      // Add bonuses from buildings
+      city.buildings.forEach(buildingType => {
+        const building = getBuildingByType(buildingType);
+        Object.entries(building.effects).forEach(([resource, amount]) => {
+          player.resources[resource as keyof Resources] += amount;
+        });
+      });
+
       // Add bonuses from civilization
       civ.bonuses.forEach(bonus => {
         if (!bonus.terrain) {
@@ -214,7 +232,42 @@ export class GameStateManager {
           });
         }
       });
+
+      // Process city production
+      if (city.currentProduction) {
+        const productionPerTurn = city.production.production || 1;
+        city.currentProduction.progress += productionPerTurn;
+
+        if (city.currentProduction.progress >= city.currentProduction.required) {
+          // Production complete!
+          if (city.currentProduction.type === 'building') {
+            const buildingType = Object.keys(getBuildingByType).find(
+              key => getBuildingByType(key as any).name === city.currentProduction!.name
+            ) as BuildingType;
+
+            if (buildingType) {
+              city.buildings.push(buildingType);
+              this.addNotification(`${city.name} completed ${city.currentProduction.name}!`, 'success');
+            }
+          }
+          city.currentProduction = undefined;
+        }
+      }
     });
+
+    // Process technology research
+    if (player.currentResearch) {
+      const sciencePerTurn = player.resources.science || 1;
+      player.currentResearch.progress += sciencePerTurn;
+
+      const tech = getTechnologyById(player.currentResearch.techId);
+      if (tech && player.currentResearch.progress >= tech.cost) {
+        // Research complete!
+        player.technologies.push(tech.id);
+        this.addNotification(`Researched ${tech.name}!`, 'success');
+        player.currentResearch = undefined;
+      }
+    }
 
     // Grow population (simplified)
     player.cities.forEach(city => {
@@ -242,5 +295,274 @@ export class GameStateManager {
       return this.state.map[y][x];
     }
     return null;
+  }
+
+  // ========== TECHNOLOGY SYSTEM ==========
+
+  startResearch(player: Player, techId: string): boolean {
+    if (!canResearch(techId, player.technologies)) {
+      this.addNotification('Cannot research this technology yet', 'warning');
+      return false;
+    }
+
+    const tech = getTechnologyById(techId);
+    if (!tech) return false;
+
+    player.currentResearch = {
+      techId,
+      progress: 0
+    };
+
+    this.addNotification(`Researching ${tech.name}`, 'info');
+    return true;
+  }
+
+  // ========== BUILDING SYSTEM ==========
+
+  startBuildingConstruction(city: City, buildingType: BuildingType): boolean {
+    const player = this.state.players.find(p => p.id === city.ownerId)!;
+
+    if (!canBuildBuilding(buildingType, city.buildings, player.technologies)) {
+      this.addNotification('Cannot build this yet', 'warning');
+      return false;
+    }
+
+    const building = getBuildingByType(buildingType);
+    const productionCost = building.cost.production || 0;
+
+    city.currentProduction = {
+      type: 'building',
+      name: building.name,
+      progress: 0,
+      required: productionCost
+    };
+
+    this.addNotification(`${city.name} is building ${building.name}`, 'info');
+    return true;
+  }
+
+  // ========== UNIT SYSTEM ==========
+
+  recruitUnit(city: City, unitType: UnitType): boolean {
+    const player = this.state.players.find(p => p.id === city.ownerId)!;
+    const costs = this.getUnitCost(unitType);
+
+    // Check if can afford
+    if (player.resources.production < costs.production || player.resources.gold < (costs.gold || 0)) {
+      this.addNotification('Not enough resources to recruit unit', 'warning');
+      return false;
+    }
+
+    // Find empty adjacent tile
+    const adjacentTiles = [
+      {x: city.x + 1, y: city.y},
+      {x: city.x - 1, y: city.y},
+      {x: city.x, y: city.y + 1},
+      {x: city.x, y: city.y - 1}
+    ];
+
+    let spawnTile = null;
+    for (const pos of adjacentTiles) {
+      const tile = this.getTile(pos.x, pos.y);
+      if (tile && !tile.unitId && tile.terrain !== 'ocean' && tile.terrain !== 'mountains') {
+        spawnTile = pos;
+        break;
+      }
+    }
+
+    if (!spawnTile) {
+      this.addNotification('No space to recruit unit', 'warning');
+      return false;
+    }
+
+    // Deduct costs
+    player.resources.production -= costs.production;
+    if (costs.gold) player.resources.gold -= costs.gold;
+
+    // Create unit
+    const unit: Unit = {
+      id: `unit-${Date.now()}`,
+      type: unitType,
+      ownerId: player.id,
+      x: spawnTile.x,
+      y: spawnTile.y,
+      health: 100,
+      maxHealth: 100,
+      movement: this.getUnitMovement(unitType),
+      maxMovement: this.getUnitMovement(unitType),
+      attack: this.getUnitAttack(unitType),
+      defense: this.getUnitDefense(unitType),
+      hasActed: false
+    };
+
+    player.units.push(unit);
+    this.state.map[spawnTile.y][spawnTile.x].unitId = unit.id;
+
+    this.addNotification(`${city.name} recruited ${unitType}`, 'success');
+    return true;
+  }
+
+  private getUnitCost(unitType: UnitType): {production: number; gold?: number} {
+    const costs: Record<UnitType, {production: number; gold?: number}> = {
+      settler: {production: 50},
+      warrior: {production: 20},
+      spearman: {production: 30},
+      archer: {production: 25},
+      swordsman: {production: 40, gold: 10},
+      cavalry: {production: 45, gold: 15},
+      siege: {production: 60, gold: 20}
+    };
+    return costs[unitType] || {production: 20};
+  }
+
+  private getUnitMovement(unitType: UnitType): number {
+    const movements: Record<UnitType, number> = {
+      settler: 2,
+      warrior: 2,
+      spearman: 2,
+      archer: 2,
+      swordsman: 2,
+      cavalry: 4,
+      siege: 1
+    };
+    return movements[unitType] || 2;
+  }
+
+  private getUnitAttack(unitType: UnitType): number {
+    const attacks: Record<UnitType, number> = {
+      settler: 0,
+      warrior: 10,
+      spearman: 12,
+      archer: 8,
+      swordsman: 15,
+      cavalry: 14,
+      siege: 20
+    };
+    return attacks[unitType] || 10;
+  }
+
+  private getUnitDefense(unitType: UnitType): number {
+    const defenses: Record<UnitType, number> = {
+      settler: 5,
+      warrior: 8,
+      spearman: 14,
+      archer: 5,
+      swordsman: 10,
+      cavalry: 6,
+      siege: 5
+    };
+    return defenses[unitType] || 8;
+  }
+
+  // ========== MOVEMENT & COMBAT ==========
+
+  moveUnit(unit: Unit, targetX: number, targetY: number): boolean {
+    const path = Pathfinding.findPath(
+      {x: unit.x, y: unit.y},
+      {x: targetX, y: targetY},
+      unit,
+      this.state
+    );
+
+    if (path.length === 0) {
+      return false;
+    }
+
+    // Move along path up to movement points
+    let movesUsed = 0;
+    for (const step of path) {
+      const tile = this.state.map[step.y][step.x];
+      const moveCost = this.getMoveCost(tile, unit);
+
+      if (movesUsed + moveCost > unit.movement) {
+        break;
+      }
+
+      // Clear old position
+      this.state.map[unit.y][unit.x].unitId = undefined;
+
+      // Move to new position
+      unit.x = step.x;
+      unit.y = step.y;
+      movesUsed += moveCost;
+
+      // Set new position
+      this.state.map[step.y][step.x].unitId = unit.id;
+
+      // Reveal fog of war
+      this.revealArea(unit.x, unit.y, 2);
+    }
+
+    unit.movement -= movesUsed;
+    return true;
+  }
+
+  private getMoveCost(tile: Tile, unit: Unit): number {
+    let cost = 1;
+
+    switch (tile.terrain) {
+      case 'hills':
+      case 'forest':
+      case 'jungle':
+        cost = 2;
+        break;
+      case 'desert':
+      case 'tundra':
+        cost = 1.5;
+        break;
+    }
+
+    if (tile.hasRiver) cost += 0.5;
+
+    return cost;
+  }
+
+  attackUnit(attacker: Unit, defender: Unit): boolean {
+    if (!CombatSystem.canAttack(attacker, defender, this.state)) {
+      this.addNotification('Cannot attack this target', 'warning');
+      return false;
+    }
+
+    const defenderTile = this.state.map[defender.y][defender.x];
+    const result = CombatSystem.resolveCombat(attacker, defender, defenderTile, this.state);
+
+    this.addNotification(result.message, 'info');
+
+    // Remove destroyed units
+    if (result.defenderDestroyed) {
+      this.removeUnit(defender);
+    }
+    if (result.attackerDestroyed) {
+      this.removeUnit(attacker);
+    }
+
+    attacker.hasActed = true;
+    return true;
+  }
+
+  private removeUnit(unit: Unit) {
+    const player = this.state.players.find(p => p.id === unit.ownerId)!;
+    const index = player.units.findIndex(u => u.id === unit.id);
+    if (index >= 0) {
+      player.units.splice(index, 1);
+    }
+
+    // Clear from map
+    this.state.map[unit.y][unit.x].unitId = undefined;
+  }
+
+  // ========== NOTIFICATIONS ==========
+
+  addNotification(message: string, type: 'info' | 'success' | 'warning' | 'error') {
+    this.state.notifications.push({
+      message,
+      type,
+      timestamp: Date.now()
+    });
+
+    // Keep only last 10 notifications
+    if (this.state.notifications.length > 10) {
+      this.state.notifications.shift();
+    }
   }
 }
