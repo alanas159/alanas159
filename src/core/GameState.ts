@@ -72,7 +72,7 @@ export class GameStateManager {
       territories: [],
       era: 'antiquity',
       isAI,
-      technologies: [],
+      technologies: [...civ.startingTechnologies], // Copy starting technologies
       currentResearch: undefined
     };
   }
@@ -175,8 +175,16 @@ export class GameStateManager {
     }
 
     const player = this.state.players.find(p => p.id === playerId)!;
-    const cityNames = ['Capital', 'Secondus', 'Tertius', 'Quartus', 'Quintus'];
-    const cityName = cityNames[player.cities.length] || `City ${player.cities.length + 1}`;
+    const civ = CIVILIZATIONS.find(c => c.id === player.civilizationId)!;
+
+    // Use civilization's capital name for first city, generic names for others
+    let cityName: string;
+    if (isCapital) {
+      cityName = civ.capitalName;
+    } else {
+      const cityNames = ['Secondus', 'Tertius', 'Quartus', 'Quintus', 'Sextus', 'Septimus'];
+      cityName = cityNames[player.cities.length - 1] || `City ${player.cities.length + 1}`;
+    }
 
     // Base production values
     let baseProduction = {
@@ -326,6 +334,7 @@ export class GameStateManager {
       // Process turn for all players
       this.state.players.forEach(player => {
         this.processTurn(player);
+        this.processTerritoryOccupation(player);
       });
     }
 
@@ -542,6 +551,124 @@ export class GameStateManager {
     }
 
     return maxEra;
+  }
+
+  /**
+   * Process territory occupation by units
+   * Units staying on neutral/enemy tiles can capture them over time
+   */
+  private processTerritoryOccupation(player: Player) {
+    player.units.forEach(unit => {
+      const tile = this.state.map[unit.y][unit.x];
+
+      // Skip if tile already owned by this player or has a city
+      if (tile.ownerId === player.id || tile.cityId) {
+        return;
+      }
+
+      // Military units can capture territory
+      const isMilitaryUnit = unit.type !== 'settler';
+
+      if (isMilitaryUnit) {
+        // Check if unit is occupying this tile
+        if (tile.occupyingUnitId === unit.id) {
+          // Increment occupation progress
+          // Military units capture 2x faster (1.5 turns vs 3 turns)
+          const progressIncrement = isMilitaryUnit ? 2 : 1;
+          tile.occupationProgress = (tile.occupationProgress || 0) + progressIncrement;
+
+          // Capture threshold: 3 points (military units: 1.5 turns, civilian: 3 turns)
+          if (tile.occupationProgress >= 3) {
+            this.captureTile(tile, player);
+          }
+        } else {
+          // Unit just arrived, start occupation
+          tile.occupyingUnitId = unit.id;
+          tile.occupationProgress = 1;
+        }
+      }
+    });
+
+    // Clean up occupation data for tiles no longer occupied
+    for (let y = 0; y < this.state.config.mapHeight; y++) {
+      for (let x = 0; x < this.state.config.mapWidth; x++) {
+        const tile = this.state.map[y][x];
+
+        if (tile.occupyingUnitId) {
+          // Check if the occupying unit still exists and is on this tile
+          const unit = player.units.find(u => u.id === tile.occupyingUnitId);
+
+          if (!unit || unit.x !== x || unit.y !== y) {
+            // Unit moved away or was destroyed, reset occupation
+            tile.occupyingUnitId = undefined;
+            tile.occupationProgress = 0;
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Capture a tile and assign it to nearest friendly city
+   */
+  private captureTile(tile: Tile, player: Player) {
+    // Find nearest city
+    let nearestCity: City | null = null;
+    let minDistance = Infinity;
+
+    for (const city of player.cities) {
+      const distance = Math.sqrt(
+        Math.pow(city.x - tile.x, 2) + Math.pow(city.y - tile.y, 2)
+      );
+
+      if (distance < minDistance) {
+        minDistance = distance;
+        nearestCity = city;
+      }
+    }
+
+    if (nearestCity && minDistance <= 5) {
+      // Only capture if within 5 tiles of a city
+      const oldOwnerId = tile.ownerId;
+
+      // Update tile ownership
+      tile.ownerId = player.id;
+      tile.occupyingUnitId = undefined;
+      tile.occupationProgress = 0;
+
+      // Add to city territories
+      nearestCity.territories.push({ x: tile.x, y: tile.y });
+      player.territories.push({ x: tile.x, y: tile.y });
+
+      // Add terrain production to city
+      const terrainBonus = this.getTerrainProduction(tile);
+      Object.entries(terrainBonus).forEach(([resource, amount]) => {
+        nearestCity!.production[resource as keyof Resources] =
+          (nearestCity!.production[resource as keyof Resources] || 0) + amount;
+      });
+
+      // Remove from old owner's territories if applicable
+      if (oldOwnerId) {
+        const oldOwner = this.state.players.find(p => p.id === oldOwnerId);
+        if (oldOwner) {
+          oldOwner.territories = oldOwner.territories.filter(
+            t => !(t.x === tile.x && t.y === tile.y)
+          );
+
+          // Remove from old city territories
+          for (const city of oldOwner.cities) {
+            city.territories = city.territories.filter(
+              t => !(t.x === tile.x && t.y === tile.y)
+            );
+          }
+        }
+      }
+
+      this.addNotification(
+        `Captured territory near ${nearestCity.name}!`,
+        'success'
+      );
+    }
   }
 
   getState(): GameState {
