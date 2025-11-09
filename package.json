@@ -1,7 +1,7 @@
 {
-  "name": "dark-ages-survival",
-  "version": "0.1.0",
-  "description": "A medieval zombie apocalypse survival RPG",
+  "name": "empires-eternal",
+  "version": "1.0.0",
+  "description": "A 2D turn-based strategy game of world conquest through civilizations",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -11,8 +11,5 @@
   "devDependencies": {
     "vite": "^5.0.0",
     "typescript": "^5.3.0"
-  },
-  "dependencies": {
-    "phaser": "^3.70.0"
   }
 }

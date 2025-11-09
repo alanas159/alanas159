@@ -2,10 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="mobile-web-app-capable" content="yes">
-  <title>Dark Ages: Survival</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Empires Eternal - Turn-Based Strategy</title>
   <style>
     * {
       margin: 0;
@@ -14,22 +12,222 @@
     }
 
     body {
-      background: #000;
+      font-family: 'Georgia', serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
       overflow: hidden;
-      touch-action: none;
+      color: #e0e0e0;
     }
 
     #game-container {
       display: flex;
-      justify-content: center;
-      align-items: center;
       width: 100vw;
       height: 100vh;
+    }
+
+    #canvas-container {
+      flex: 1;
+      position: relative;
+      background: #0f1419;
+    }
+
+    #game-canvas {
+      display: block;
+      cursor: crosshair;
+    }
+
+    #ui-panel {
+      width: 320px;
+      background: rgba(22, 33, 62, 0.95);
+      border-left: 2px solid #d4af37;
+      padding: 20px;
+      overflow-y: auto;
+      box-shadow: -5px 0 15px rgba(0,0,0,0.5);
+    }
+
+    .ui-section {
+      margin-bottom: 20px;
+      padding: 15px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid #d4af37;
+      border-radius: 4px;
+    }
+
+    .ui-section h3 {
+      color: #d4af37;
+      margin-bottom: 10px;
+      font-size: 16px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .resource-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      font-size: 13px;
+    }
+
+    .resource-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 5px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 3px;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 10px;
+      margin: 5px 0;
+      background: linear-gradient(135deg, #d4af37 0%, #aa8c2e 100%);
+      border: none;
+      border-radius: 4px;
+      color: #000;
+      font-weight: bold;
+      cursor: pointer;
+      text-transform: uppercase;
+      font-size: 12px;
+      letter-spacing: 1px;
+      transition: all 0.3s;
+    }
+
+    .btn:hover {
+      background: linear-gradient(135deg, #ffd700 0%, #d4af37 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(212, 175, 55, 0.3);
+    }
+
+    .btn:disabled {
+      background: #555;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    #civ-selection {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(22, 33, 62, 0.98);
+      border: 3px solid #d4af37;
+      border-radius: 8px;
+      padding: 30px;
+      max-width: 800px;
+      max-height: 80vh;
+      overflow-y: auto;
+      z-index: 1000;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+    }
+
+    #civ-selection h2 {
+      color: #d4af37;
+      text-align: center;
+      margin-bottom: 20px;
+      font-size: 28px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .civ-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .civ-card {
+      background: rgba(0, 0, 0, 0.5);
+      border: 2px solid #555;
+      border-radius: 6px;
+      padding: 15px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .civ-card:hover {
+      border-color: #d4af37;
+      background: rgba(212, 175, 55, 0.1);
+      transform: scale(1.05);
+    }
+
+    .civ-card.selected {
+      border-color: #d4af37;
+      background: rgba(212, 175, 55, 0.2);
+      box-shadow: 0 0 20px rgba(212, 175, 55, 0.4);
+    }
+
+    .civ-card h3 {
+      color: #d4af37;
+      margin-bottom: 8px;
+      font-size: 18px;
+    }
+
+    .civ-card p {
+      font-size: 12px;
+      line-height: 1.5;
+      color: #ccc;
+    }
+
+    .hidden {
+      display: none !important;
     }
   </style>
 </head>
 <body>
-  <div id="game-container"></div>
+  <div id="game-container">
+    <div id="canvas-container">
+      <canvas id="game-canvas"></canvas>
+
+      <!-- Civilization Selection Screen -->
+      <div id="civ-selection">
+        <h2>Choose Your Civilization</h2>
+        <div class="civ-grid" id="civ-grid"></div>
+        <button class="btn" id="start-game-btn" disabled>Begin Your Empire</button>
+      </div>
+    </div>
+
+    <!-- UI Panel -->
+    <div id="ui-panel">
+      <div class="ui-section">
+        <h3>Civilization</h3>
+        <div id="civ-info">
+          <p id="civ-name">Select a civilization</p>
+        </div>
+      </div>
+
+      <div class="ui-section">
+        <h3>Resources</h3>
+        <div class="resource-grid" id="resources">
+          <div class="resource-item"><span>Food:</span><span id="food">0</span></div>
+          <div class="resource-item"><span>Production:</span><span id="production">0</span></div>
+          <div class="resource-item"><span>Gold:</span><span id="gold">0</span></div>
+          <div class="resource-item"><span>Science:</span><span id="science">0</span></div>
+          <div class="resource-item"><span>Culture:</span><span id="culture">0</span></div>
+        </div>
+      </div>
+
+      <div class="ui-section">
+        <h3>Turn Info</h3>
+        <p>Turn: <span id="turn-number">1</span></p>
+        <p>Era: <span id="era">Antiquity</span></p>
+      </div>
+
+      <div class="ui-section">
+        <h3>Actions</h3>
+        <button class="btn" id="end-turn-btn">End Turn</button>
+        <button class="btn" id="build-city-btn" disabled>Found City</button>
+        <button class="btn" id="recruit-unit-btn" disabled>Recruit Unit</button>
+      </div>
+
+      <div class="ui-section">
+        <h3>Selected Tile</h3>
+        <div id="tile-info">
+          <p>Click a tile to view details</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script type="module" src="/src/main.ts"></script>
 </body>
 </html>
