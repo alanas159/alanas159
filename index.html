@@ -705,6 +705,319 @@
       background: linear-gradient(180deg, #d4af37 0%, #aa8c2e 100%);
       border-radius: 5px;
     }
+
+    /* Tutorial Overlay */
+    #tutorial-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.85);
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(5px);
+    }
+
+    .tutorial-content {
+      background: linear-gradient(135deg, rgba(15, 20, 25, 0.98) 0%, rgba(22, 33, 62, 0.98) 100%);
+      border: 4px solid #d4af37;
+      border-radius: 16px;
+      padding: 40px;
+      max-width: 700px;
+      box-shadow: 0 25px 80px rgba(0,0,0,0.95), inset 0 0 100px rgba(212, 175, 55, 0.05);
+      backdrop-filter: blur(15px);
+      animation: tutorialSlideIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+
+    .tutorial-content.position-left {
+      position: absolute;
+      right: 420px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    .tutorial-content.position-right {
+      position: absolute;
+      left: 50px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    .tutorial-content.position-top {
+      position: absolute;
+      top: 120px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .tutorial-content.position-bottom {
+      position: absolute;
+      bottom: 50px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    @keyframes tutorialSlideIn {
+      from {
+        opacity: 0;
+        transform: scale(0.8);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    #tutorial-title {
+      color: #d4af37;
+      font-size: 28px;
+      margin-bottom: 20px;
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      text-shadow: 2px 2px 6px rgba(0,0,0,0.8);
+    }
+
+    #tutorial-description {
+      color: #cbd5e1;
+      font-size: 16px;
+      line-height: 1.8;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+
+    #tutorial-progress {
+      text-align: center;
+      color: #9ca3af;
+      font-size: 12px;
+      margin-bottom: 20px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .tutorial-buttons {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-top: 25px;
+    }
+
+    .tutorial-btn {
+      padding: 12px 24px;
+      background: linear-gradient(135deg, #d4af37 0%, #aa8c2e 100%);
+      border: 2px solid rgba(255,255,255,0.2);
+      border-radius: 8px;
+      color: #000;
+      font-weight: bold;
+      cursor: pointer;
+      text-transform: uppercase;
+      font-size: 12px;
+      letter-spacing: 1px;
+      transition: all 0.3s;
+      box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+    }
+
+    .tutorial-btn:hover {
+      background: linear-gradient(135deg, #ffd700 0%, #d4af37 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(212, 175, 55, 0.5);
+    }
+
+    .tutorial-btn:disabled {
+      background: linear-gradient(135deg, #3a3a3a 0%, #2a2a2a 100%);
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+
+    .tutorial-btn-secondary {
+      background: linear-gradient(135deg, rgba(100, 100, 100, 0.5) 0%, rgba(80, 80, 80, 0.5) 100%);
+      color: #cbd5e1;
+    }
+
+    .tutorial-btn-secondary:hover {
+      background: linear-gradient(135deg, rgba(120, 120, 120, 0.6) 0%, rgba(100, 100, 100, 0.6) 100%);
+    }
+
+    .tutorial-highlight {
+      position: relative;
+      z-index: 9999;
+      box-shadow: 0 0 0 4px #d4af37, 0 0 30px rgba(212, 175, 55, 0.8) !important;
+      animation: tutorialPulse 2s infinite;
+    }
+
+    @keyframes tutorialPulse {
+      0%, 100% {
+        box-shadow: 0 0 0 4px #d4af37, 0 0 30px rgba(212, 175, 55, 0.8);
+      }
+      50% {
+        box-shadow: 0 0 0 6px #ffd700, 0 0 40px rgba(255, 215, 0, 1);
+      }
+    }
+
+    /* Requirements Modal */
+    #requirements-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.75);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(4px);
+    }
+
+    .requirements-content {
+      background: linear-gradient(135deg, rgba(15, 20, 25, 0.98) 0%, rgba(22, 33, 62, 0.98) 100%);
+      border: 3px solid #d4af37;
+      border-radius: 12px;
+      padding: 30px;
+      max-width: 550px;
+      min-width: 450px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.9);
+      animation: modalFadeIn 0.3s ease-out;
+    }
+
+    @keyframes modalFadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .requirements-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 25px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid rgba(212, 175, 55, 0.3);
+    }
+
+    .requirements-title {
+      color: #d4af37;
+      font-size: 22px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+    }
+
+    .requirements-close {
+      background: none;
+      border: none;
+      color: #9ca3af;
+      font-size: 28px;
+      cursor: pointer;
+      padding: 0;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      transition: all 0.2s;
+    }
+
+    .requirements-close:hover {
+      background: rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+    }
+
+    .requirements-list {
+      margin: 20px 0;
+    }
+
+    .requirement-item {
+      display: flex;
+      align-items: center;
+      padding: 12px;
+      margin: 8px 0;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 6px;
+      border-left: 4px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .requirement-item:hover {
+      background: rgba(0, 0, 0, 0.5);
+    }
+
+    .requirement-item.met {
+      border-left-color: #4ade80;
+    }
+
+    .requirement-item.unmet {
+      border-left-color: #ef4444;
+    }
+
+    .requirement-icon {
+      font-size: 20px;
+      margin-right: 12px;
+      width: 28px;
+      text-align: center;
+    }
+
+    .requirement-text {
+      flex: 1;
+      color: #cbd5e1;
+      font-size: 14px;
+    }
+
+    .requirement-value {
+      color: #d4af37;
+      font-weight: bold;
+      font-size: 14px;
+      margin-left: 10px;
+    }
+
+    .requirement-status {
+      font-size: 18px;
+      margin-left: 10px;
+    }
+
+    .requirements-footer {
+      margin-top: 25px;
+      padding-top: 15px;
+      border-top: 1px solid rgba(212, 175, 55, 0.2);
+      text-align: center;
+      color: #9ca3af;
+      font-size: 12px;
+    }
+
+    /* Show Tutorial Button */
+    #show-tutorial-btn {
+      position: fixed;
+      bottom: 20px;
+      right: 400px;
+      padding: 12px 20px;
+      background: linear-gradient(135deg, rgba(212, 175, 55, 0.9) 0%, rgba(170, 140, 46, 0.9) 100%);
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 8px;
+      color: #000;
+      font-weight: bold;
+      cursor: pointer;
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 1px;
+      transition: all 0.3s;
+      box-shadow: 0 4px 12px rgba(212, 175, 55, 0.4);
+      z-index: 100;
+    }
+
+    #show-tutorial-btn:hover {
+      background: linear-gradient(135deg, #ffd700 0%, #d4af37 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(212, 175, 55, 0.6);
+    }
   </style>
 </head>
 <body>
@@ -846,6 +1159,37 @@
       </div>
     </div>
   </div>
+
+  <!-- Tutorial Overlay -->
+  <div id="tutorial-overlay" class="hidden">
+    <div id="tutorial-content" class="tutorial-content position-center">
+      <div id="tutorial-title"></div>
+      <div id="tutorial-description"></div>
+      <div id="tutorial-progress"></div>
+      <div class="tutorial-buttons">
+        <button id="tutorial-prev" class="tutorial-btn tutorial-btn-secondary">← PREV</button>
+        <button id="tutorial-next" class="tutorial-btn">NEXT →</button>
+        <button id="tutorial-skip" class="tutorial-btn tutorial-btn-secondary">SKIP</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Requirements Modal -->
+  <div id="requirements-modal" class="hidden">
+    <div class="requirements-content">
+      <div class="requirements-header">
+        <h3 id="requirements-title" class="requirements-title"></h3>
+        <button id="requirements-close" class="requirements-close">×</button>
+      </div>
+      <div id="requirements-list" class="requirements-list"></div>
+      <div class="requirements-footer">
+        Click on disabled buttons to see their requirements
+      </div>
+    </div>
+  </div>
+
+  <!-- Show Tutorial Button -->
+  <button id="show-tutorial-btn">📚 Tutorial</button>
 
   <script type="module" src="/src/main.ts"></script>
 </body>

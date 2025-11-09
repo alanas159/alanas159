@@ -1,8 +1,13 @@
-import { GameState, Player, Tile } from '../types';
+import { GameState, Player, Tile, City, UnitType, Unit } from '../types';
 import { CIVILIZATIONS, getCivilizationById } from '../civilizations/CivilizationData';
 import { getTechnologyById } from '../core/TechnologyData';
+import { TutorialManager } from './TutorialManager';
+import { RequirementsModal } from './RequirementsModal';
 
 export class UIManager {
+  private tutorialManager: TutorialManager;
+  private requirementsModal: RequirementsModal;
+  private showTutorialBtn: HTMLButtonElement;
   private civSelectionDiv: HTMLElement;
   private civGridDiv: HTMLElement;
   private startGameBtn: HTMLButtonElement;
@@ -72,8 +77,20 @@ export class UIManager {
     this.recruitUnitBtn = document.getElementById('recruit-unit-btn') as HTMLButtonElement;
     this.researchBtn = document.getElementById('research-btn') as HTMLButtonElement;
     this.notificationsDiv = document.getElementById('notifications')!;
+    this.showTutorialBtn = document.getElementById('show-tutorial-btn') as HTMLButtonElement;
+
+    // Initialize tutorial and requirements systems
+    this.tutorialManager = new TutorialManager();
+    this.requirementsModal = new RequirementsModal();
 
     this.setupCivilizationSelection();
+    this.setupTutorialButton();
+  }
+
+  private setupTutorialButton() {
+    this.showTutorialBtn.addEventListener('click', () => {
+      this.tutorialManager.start();
+    });
   }
 
   private setupCivilizationSelection() {
@@ -236,5 +253,52 @@ export class UIManager {
 
   setResearchCallback(callback: () => void) {
     this.researchBtn.addEventListener('click', callback);
+  }
+
+  /**
+   * Show requirements for founding a city
+   */
+  showFoundCityRequirements(player: Player, selectedUnit: Unit | null) {
+    this.requirementsModal.showFoundCityRequirements(player, selectedUnit);
+  }
+
+  /**
+   * Show requirements for recruiting a unit
+   */
+  showRecruitUnitRequirements(player: Player, selectedCity: City | null, unitType: UnitType) {
+    this.requirementsModal.showRecruitUnitRequirements(player, selectedCity, unitType);
+  }
+
+  /**
+   * Show requirements for researching technology
+   */
+  showResearchRequirements(player: Player, techId: string) {
+    this.requirementsModal.showResearchRequirements(player, techId);
+  }
+
+  /**
+   * Get tutorial manager
+   */
+  getTutorialManager(): TutorialManager {
+    return this.tutorialManager;
+  }
+
+  /**
+   * Get requirements modal
+   */
+  getRequirementsModal(): RequirementsModal {
+    return this.requirementsModal;
+  }
+
+  /**
+   * Start tutorial if not completed
+   */
+  startTutorialIfNeeded() {
+    if (!TutorialManager.hasCompletedTutorial()) {
+      // Start tutorial after a short delay
+      setTimeout(() => {
+        this.tutorialManager.start();
+      }, 1000);
+    }
   }
 }

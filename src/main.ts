@@ -24,9 +24,9 @@ class EmpiresEternalGame {
     });
 
     this.uiManager.setEndTurnCallback(() => this.endTurn());
-    this.uiManager.setBuildCityCallback(() => this.buildCity());
-    this.uiManager.setRecruitUnitCallback(() => this.recruitUnit());
-    this.uiManager.setResearchCallback(() => this.openResearchMenu());
+    this.uiManager.setBuildCityCallback(() => this.handleBuildCity());
+    this.uiManager.setRecruitUnitCallback(() => this.handleRecruitUnit());
+    this.uiManager.setResearchCallback(() => this.handleResearch());
 
     this.canvas.addEventListener('click', (e) => this.handleCanvasClick(e));
 
@@ -51,6 +51,9 @@ class EmpiresEternalGame {
     }
 
     this.startGameLoop();
+
+    // Start tutorial if not completed
+    this.uiManager.startTutorialIfNeeded();
   }
 
   private startGameLoop() {
@@ -119,62 +122,70 @@ class EmpiresEternalGame {
     }, 500);
   }
 
-  private buildCity() {
+  private handleBuildCity() {
     if (!this.gameState) return;
 
     const state = this.gameState.getState();
     const currentPlayer = this.gameState.getCurrentPlayer();
 
+    // Get selected unit
+    let selectedUnit = null;
     if (state.selectedTile) {
       const tile = this.gameState.getTile(state.selectedTile.x, state.selectedTile.y);
-
       if (tile?.unitId) {
-        const unit = currentPlayer.units.find(u => u.id === tile.unitId);
-
-        if (unit && unit.type === 'settler' && unit.ownerId === currentPlayer.id) {
-          // Attempt to found city with settler
-          const success = this.gameState.foundCityWithSettler(unit);
-          if (!success) {
-            // Error notifications are handled inside foundCityWithSettler
-          }
-        } else if (unit && unit.ownerId === currentPlayer.id) {
-          this.gameState.addNotification('Only settlers can found cities', 'warning');
-        } else {
-          this.gameState.addNotification('Select your settler unit to found a city', 'warning');
-        }
-      } else {
-        this.gameState.addNotification('Select a settler to found a city', 'warning');
+        selectedUnit = currentPlayer.units.find(u => u.id === tile.unitId);
       }
-    } else {
-      this.gameState.addNotification('Select a tile with your settler', 'warning');
+    }
+
+    // Check if we can found a city
+    const canFound = selectedUnit && selectedUnit.type === 'settler' && selectedUnit.ownerId === currentPlayer.id;
+
+    if (!canFound) {
+      // Show requirements modal
+      this.uiManager.showFoundCityRequirements(currentPlayer, selectedUnit);
+      return;
+    }
+
+    // Attempt to found city with settler
+    const success = this.gameState.foundCityWithSettler(selectedUnit);
+    if (!success) {
+      // Error notifications are handled inside foundCityWithSettler
     }
   }
 
-  private recruitUnit() {
+  private handleRecruitUnit() {
     if (!this.gameState) return;
 
     const state = this.gameState.getState();
     const currentPlayer = this.gameState.getCurrentPlayer();
 
+    // Get selected city
+    let selectedCity = null;
     if (state.selectedTile) {
       const tile = this.gameState.getTile(state.selectedTile.x, state.selectedTile.y);
-
       if (tile?.cityId) {
-        const city = currentPlayer.cities.find(c => c.id === tile.cityId);
+        selectedCity = currentPlayer.cities.find(c => c.id === tile.cityId);
+      }
+    }
 
-        if (city) {
-          const unitType = prompt('Recruit: warrior, archer, spearman, cavalry, swordsman');
-          if (unitType && ['warrior', 'archer', 'spearman', 'cavalry', 'swordsman', 'siege'].includes(unitType)) {
-            this.gameState.recruitUnit(city, unitType as any);
-          }
-        }
-      } else {
-        this.gameState.addNotification('Select a city to recruit units', 'warning');
+    if (!selectedCity) {
+      this.gameState.addNotification('Select a city to recruit units', 'warning');
+      return;
+    }
+
+    // Ask which unit to recruit
+    const unitType = prompt('Recruit: warrior, archer, spearman, cavalry, swordsman, siege');
+    if (unitType && ['warrior', 'archer', 'spearman', 'cavalry', 'swordsman', 'siege'].includes(unitType)) {
+      const success = this.gameState.recruitUnit(selectedCity, unitType as any);
+
+      // If recruitment failed, show requirements
+      if (!success) {
+        this.uiManager.showRecruitUnitRequirements(currentPlayer, selectedCity, unitType as any);
       }
     }
   }
 
-  private openResearchMenu() {
+  private handleResearch() {
     if (!this.gameState) return;
 
     const currentPlayer = this.gameState.getCurrentPlayer();
@@ -184,10 +195,15 @@ class EmpiresEternalGame {
       return;
     }
 
-    const tech = prompt('Research: agriculture, mining, writing, archery, bronze_working, animal_husbandry');
+    const tech = prompt('Research tech ID (e.g., agriculture, mining, writing, archery, bronze_working, animal_husbandry, pottery, sailing, masonry, calendars, etc.)');
 
     if (tech) {
-      this.gameState.startResearch(currentPlayer, tech);
+      const success = this.gameState.startResearch(currentPlayer, tech);
+
+      // If research failed, show requirements
+      if (!success) {
+        this.uiManager.showResearchRequirements(currentPlayer, tech);
+      }
     }
   }
 
