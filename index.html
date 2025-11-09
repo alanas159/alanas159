@@ -1018,6 +1018,193 @@
       transform: translateY(-2px);
       box-shadow: 0 6px 16px rgba(212, 175, 55, 0.6);
     }
+
+    /* Diplomacy Modal */
+    #diplomacy-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.85);
+      z-index: 9998;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(5px);
+    }
+
+    .diplomacy-content {
+      background: linear-gradient(135deg, rgba(15, 20, 25, 0.98) 0%, rgba(22, 33, 62, 0.98) 100%);
+      border: 3px solid #d4af37;
+      border-radius: 12px;
+      padding: 30px;
+      max-width: 900px;
+      max-height: 85vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.9);
+      animation: modalFadeIn 0.3s ease-out;
+    }
+
+    .diplomacy-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 25px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid rgba(212, 175, 55, 0.3);
+    }
+
+    .diplomacy-header h2 {
+      color: #d4af37;
+      font-size: 28px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+      margin: 0;
+    }
+
+    .civilizations-list {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 15px;
+    }
+
+    .diplomacy-card {
+      background: linear-gradient(135deg, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.3) 100%);
+      border: 2px solid rgba(212, 175, 55, 0.3);
+      border-radius: 8px;
+      overflow: hidden;
+      transition: all 0.3s;
+    }
+
+    .diplomacy-card:hover {
+      border-color: rgba(212, 175, 55, 0.6);
+      box-shadow: 0 0 20px rgba(212, 175, 55, 0.2);
+    }
+
+    .diplomacy-card-header {
+      padding: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .diplomacy-card-header h3 {
+      margin: 0;
+      color: #d4af37;
+      font-size: 20px;
+    }
+
+    .relation-badge {
+      padding: 5px 15px;
+      border-radius: 15px;
+      font-size: 11px;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .relation-war {
+      background: #ef4444;
+      color: #fff;
+    }
+
+    .relation-neutral {
+      background: #9ca3af;
+      color: #000;
+    }
+
+    .relation-friendly {
+      background: #3b82f6;
+      color: #fff;
+    }
+
+    .relation-allied {
+      background: #4ade80;
+      color: #000;
+    }
+
+    .diplomacy-card-body {
+      padding: 0 15px 15px 15px;
+    }
+
+    .diplomacy-card-actions {
+      padding: 15px;
+      background: rgba(0, 0, 0, 0.3);
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .diplomacy-btn {
+      padding: 10px 18px;
+      border: 2px solid;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 1px;
+      transition: all 0.3s;
+      flex: 1;
+      min-width: 140px;
+    }
+
+    .diplomacy-btn-war {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      border-color: #f87171;
+      color: #fff;
+    }
+
+    .diplomacy-btn-war:hover {
+      background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+    }
+
+    .diplomacy-btn-peace {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      border-color: #60a5fa;
+      color: #fff;
+    }
+
+    .diplomacy-btn-peace:hover {
+      background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    }
+
+    .diplomacy-btn-alliance {
+      background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+      border-color: #86efac;
+      color: #000;
+    }
+
+    .diplomacy-btn-alliance:hover {
+      background: linear-gradient(135deg, #86efac 0%, #4ade80 100%);
+      box-shadow: 0 4px 12px rgba(74, 222, 128, 0.4);
+    }
+
+    .diplomacy-btn-danger {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      border-color: #fbbf24;
+      color: #000;
+    }
+
+    .diplomacy-btn-danger:hover {
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+    }
+
+    .diplomacy-btn-trade {
+      background: linear-gradient(135deg, #d4af37 0%, #aa8c2e 100%);
+      border-color: #ffd700;
+      color: #000;
+    }
+
+    .diplomacy-btn-trade:hover {
+      background: linear-gradient(135deg, #ffd700 0%, #d4af37 100%);
+      box-shadow: 0 4px 12px rgba(212, 175, 55, 0.4);
+    }
   </style>
 </head>
 <body>
@@ -1136,6 +1323,7 @@
         <button class="btn" id="build-city-btn" disabled>🏰 FOUND CITY</button>
         <button class="btn" id="recruit-unit-btn" disabled>⚔️ RECRUIT UNIT</button>
         <button class="btn" id="research-btn" disabled>🔬 RESEARCH TECH</button>
+        <button class="btn" id="diplomacy-btn">🤝 DIPLOMACY</button>
       </div>
 
       <div class="ui-section">
@@ -1185,6 +1373,17 @@
       <div class="requirements-footer">
         Click on disabled buttons to see their requirements
       </div>
+    </div>
+  </div>
+
+  <!-- Diplomacy Modal -->
+  <div id="diplomacy-modal" class="hidden">
+    <div class="diplomacy-content">
+      <div class="diplomacy-header">
+        <h2>🤝 DIPLOMACY</h2>
+        <button id="diplomacy-close" class="requirements-close">×</button>
+      </div>
+      <div id="civilizations-list" class="civilizations-list"></div>
     </div>
   </div>
 
