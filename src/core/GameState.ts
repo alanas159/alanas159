@@ -6,10 +6,14 @@ import { CombatSystem } from './CombatSystem';
 import { getTechnologyById, canResearch, TECHNOLOGIES } from './TechnologyData';
 import { getBuildingByType, canBuildBuilding } from './BuildingData';
 import { getUnitData, canRecruitUnit, getUnitCostWithBonuses } from './UnitData';
+import { AIManager } from './AIManager';
+import { VictoryManager } from './VictoryManager';
+import { SaveLoadManager } from './SaveLoadManager';
 
 export class GameStateManager {
   private state: GameState;
   private mapGenerator: MapGenerator;
+  private aiManager: AIManager;
 
   constructor(config: GameConfig) {
     this.mapGenerator = new MapGenerator(config);
@@ -24,8 +28,13 @@ export class GameStateManager {
       selectedTile: null,
       selectedUnit: null,
       selectedCity: null,
-      notifications: []
+      notifications: [],
+      builtWonders: [],
+      eventsHistory: []
     };
+
+    // Initialize AI Manager
+    this.aiManager = new AIManager(this);
   }
 
   // Initialize the game with a player's chosen civilization
@@ -336,6 +345,27 @@ export class GameStateManager {
         this.processTurn(player);
         this.processTerritoryOccupation(player);
       });
+
+      // Check victory conditions every turn
+      const victoryResult = VictoryManager.checkVictory(this.state);
+      if (victoryResult) {
+        this.state.gameEnded = true;
+        this.state.winner = victoryResult.winner;
+        this.state.victoryType = victoryResult.type as any;
+
+        const winningPlayer = this.state.players.find(p => p.id === victoryResult.winner);
+        const civName = CIVILIZATIONS.find(c => c.id === winningPlayer?.civilizationId)?.name || 'Unknown';
+
+        this.addNotification(
+          `🏆 ${civName} has achieved a ${victoryResult.type} victory!`,
+          'success'
+        );
+      }
+
+      // Auto-save every 10 turns
+      if (this.state.turn % 10 === 0) {
+        SaveLoadManager.autoSave(this.state);
+      }
     }
 
     // Reset units for the new current player
@@ -344,6 +374,11 @@ export class GameStateManager {
       unit.hasActed = false;
       unit.movement = unit.maxMovement;
     });
+
+    // Process AI turn if current player is AI
+    if (currentPlayer.isAI) {
+      this.aiManager.processTurn(currentPlayer);
+    }
   }
 
   /**

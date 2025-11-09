@@ -103,21 +103,23 @@ class EmpiresEternalGame {
 
     this.gameState.endTurn();
 
+    // Auto-process AI turns with a delay for visual feedback
     const currentPlayer = this.gameState.getCurrentPlayer();
     if (currentPlayer.isAI) {
-      this.processAITurn(currentPlayer);
+      this.processAITurns();
     }
   }
 
-  private processAITurn(player: any) {
+  private processAITurns() {
     setTimeout(() => {
-      if (this.gameState) {
-        this.gameState.endTurn();
+      if (!this.gameState) return;
 
-        const nextPlayer = this.gameState.getCurrentPlayer();
-        if (nextPlayer.isAI) {
-          this.processAITurn(nextPlayer);
-        }
+      const currentPlayer = this.gameState.getCurrentPlayer();
+
+      // Keep cycling through AI turns until we reach a human player
+      if (currentPlayer.isAI) {
+        this.gameState.endTurn();
+        this.processAITurns(); // Continue processing AI turns
       }
     }, 500);
   }
