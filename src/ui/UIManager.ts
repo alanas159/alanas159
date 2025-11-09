@@ -7,6 +7,8 @@ import { TechnologyTreeUI } from './TechnologyTreeUI';
 import { DiplomacyUI } from './DiplomacyUI';
 import { GreatPeopleUI } from './GreatPeopleUI';
 import { WorldWondersUI } from './WorldWondersUI';
+import { CitySelectionUI } from './CitySelectionUI';
+import { TradeNegotiationUI } from './TradeNegotiationUI';
 import { GreatPerson, GreatPersonType } from '../data/GreatPeopleData';
 import { WorldWondersManager } from '../data/WorldWondersData';
 
@@ -17,6 +19,8 @@ export class UIManager {
   private diplomacyUI: DiplomacyUI;
   private greatPeopleUI: GreatPeopleUI;
   private worldWondersUI: WorldWondersUI;
+  private citySelectionUI: CitySelectionUI;
+  private tradeNegotiationUI: TradeNegotiationUI;
   private showTutorialBtn: HTMLButtonElement;
   private civSelectionDiv: HTMLElement;
   private civGridDiv: HTMLElement;
@@ -102,6 +106,8 @@ export class UIManager {
     this.diplomacyUI = new DiplomacyUI();
     this.greatPeopleUI = new GreatPeopleUI();
     this.worldWondersUI = new WorldWondersUI();
+    this.citySelectionUI = new CitySelectionUI();
+    this.tradeNegotiationUI = new TradeNegotiationUI();
 
     this.setupCivilizationSelection();
     this.setupTutorialButton();
@@ -403,5 +409,28 @@ export class UIManager {
         this.tutorialManager.start();
       }, 1000);
     }
+  }
+
+  /**
+   * Show city selection dialog
+   */
+  showCitySelection(
+    cities: City[],
+    title: string,
+    description: string,
+    callback: (city: City | null) => void
+  ) {
+    this.citySelectionUI.show(cities, title, description, callback);
+  }
+
+  /**
+   * Show trade negotiation UI
+   */
+  showTradeNegotiation(
+    player: Player,
+    otherPlayer: Player,
+    onOffer: (offer: any) => void
+  ) {
+    this.tradeNegotiationUI.show(player, otherPlayer, onOffer);
   }
 }

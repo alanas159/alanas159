@@ -14,6 +14,7 @@ import { RandomEventsManager, RANDOM_EVENTS } from './RandomEvents';
 import { GreatPeopleManager } from '../data/GreatPeopleData';
 import { WorldWondersManager } from '../data/WorldWondersData';
 import { soundManager } from './SoundManager';
+import { Renderer } from './Renderer';
 
 export class GameStateManager {
   private state: GameState;
@@ -23,6 +24,7 @@ export class GameStateManager {
   public randomEventsManager: RandomEventsManager;
   public greatPeopleManager: GreatPeopleManager;
   public worldWondersManager: WorldWondersManager;
+  private renderer: Renderer | null = null;
 
   constructor(config: GameConfig) {
     this.mapGenerator = new MapGenerator(config);
@@ -50,6 +52,13 @@ export class GameStateManager {
     this.randomEventsManager = new RandomEventsManager();
     this.greatPeopleManager = new GreatPeopleManager();
     this.worldWondersManager = new WorldWondersManager();
+  }
+
+  /**
+   * Set the renderer for animations
+   */
+  setRenderer(renderer: Renderer) {
+    this.renderer = renderer;
   }
 
   // Initialize the game with a player's chosen civilization
@@ -1006,6 +1015,9 @@ export class GameStateManager {
       return false;
     }
 
+    const startX = unit.x;
+    const startY = unit.y;
+
     // Move along path up to movement points
     let movesUsed = 0;
     for (const step of path) {
@@ -1032,6 +1044,12 @@ export class GameStateManager {
     }
 
     unit.movement -= movesUsed;
+
+    // Trigger animation if renderer is available
+    if (this.renderer && (unit.x !== startX || unit.y !== startY)) {
+      this.renderer.animateUnitMove(unit.id, startX, startY, unit.x, unit.y);
+    }
+
     return true;
   }
 
@@ -1059,6 +1077,12 @@ export class GameStateManager {
     if (!CombatSystem.canAttack(attacker, defender, this.state)) {
       this.addNotification('Cannot attack this target', 'warning');
       return false;
+    }
+
+    // Trigger attack animation if renderer is available
+    if (this.renderer) {
+      this.renderer.animateUnitAttack(attacker.id, attacker.x, attacker.y);
+      this.renderer.animateUnitAttack(defender.id, defender.x, defender.y);
     }
 
     const defenderTile = this.state.map[defender.y][defender.x];
