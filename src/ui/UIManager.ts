@@ -3,10 +3,20 @@ import { CIVILIZATIONS, getCivilizationById } from '../civilizations/Civilizatio
 import { getTechnologyById } from '../core/TechnologyData';
 import { TutorialManager } from './TutorialManager';
 import { RequirementsModal } from './RequirementsModal';
+import { TechnologyTreeUI } from './TechnologyTreeUI';
+import { DiplomacyUI } from './DiplomacyUI';
+import { GreatPeopleUI } from './GreatPeopleUI';
+import { WorldWondersUI } from './WorldWondersUI';
+import { GreatPerson, GreatPersonType } from '../data/GreatPeopleData';
+import { WorldWondersManager } from '../data/WorldWondersData';
 
 export class UIManager {
   private tutorialManager: TutorialManager;
   private requirementsModal: RequirementsModal;
+  private technologyTreeUI: TechnologyTreeUI;
+  private diplomacyUI: DiplomacyUI;
+  private greatPeopleUI: GreatPeopleUI;
+  private worldWondersUI: WorldWondersUI;
   private showTutorialBtn: HTMLButtonElement;
   private civSelectionDiv: HTMLElement;
   private civGridDiv: HTMLElement;
@@ -42,6 +52,9 @@ export class UIManager {
   private buildCityBtn: HTMLButtonElement;
   private recruitUnitBtn: HTMLButtonElement;
   private researchBtn: HTMLButtonElement;
+  private diplomacyBtn: HTMLButtonElement;
+  private greatPeopleBtn: HTMLButtonElement;
+  private worldWondersBtn: HTMLButtonElement;
   private notificationsDiv: HTMLElement;
   private previousResources = { food: 0, production: 0, gold: 0, science: 0, culture: 0 };
 
@@ -76,12 +89,19 @@ export class UIManager {
     this.buildCityBtn = document.getElementById('build-city-btn') as HTMLButtonElement;
     this.recruitUnitBtn = document.getElementById('recruit-unit-btn') as HTMLButtonElement;
     this.researchBtn = document.getElementById('research-btn') as HTMLButtonElement;
+    this.diplomacyBtn = document.getElementById('diplomacy-btn') as HTMLButtonElement;
+    this.greatPeopleBtn = document.getElementById('great-people-btn') as HTMLButtonElement;
+    this.worldWondersBtn = document.getElementById('world-wonders-btn') as HTMLButtonElement;
     this.notificationsDiv = document.getElementById('notifications')!;
     this.showTutorialBtn = document.getElementById('show-tutorial-btn') as HTMLButtonElement;
 
-    // Initialize tutorial and requirements systems
+    // Initialize tutorial, requirements, technology tree, diplomacy, great people, and wonders systems
     this.tutorialManager = new TutorialManager();
     this.requirementsModal = new RequirementsModal();
+    this.technologyTreeUI = new TechnologyTreeUI();
+    this.diplomacyUI = new DiplomacyUI();
+    this.greatPeopleUI = new GreatPeopleUI();
+    this.worldWondersUI = new WorldWondersUI();
 
     this.setupCivilizationSelection();
     this.setupTutorialButton();
@@ -288,6 +308,18 @@ export class UIManager {
     this.researchBtn.addEventListener('click', callback);
   }
 
+  setDiplomacyCallback(callback: () => void) {
+    this.diplomacyBtn.addEventListener('click', callback);
+  }
+
+  setGreatPeopleCallback(callback: () => void) {
+    this.greatPeopleBtn.addEventListener('click', callback);
+  }
+
+  setWorldWondersCallback(callback: () => void) {
+    this.worldWondersBtn.addEventListener('click', callback);
+  }
+
   /**
    * Show requirements for founding a city
    */
@@ -307,6 +339,44 @@ export class UIManager {
    */
   showResearchRequirements(player: Player, techId: string) {
     this.requirementsModal.showResearchRequirements(player, techId);
+  }
+
+  /**
+   * Show technology tree for research selection
+   */
+  showTechnologyTree(player: Player, onResearch: (techId: string) => void) {
+    this.technologyTreeUI.show(player, onResearch);
+  }
+
+  /**
+   * Show diplomacy screen
+   */
+  showDiplomacy(currentPlayer: Player, allPlayers: Player[], onAction: (action: string, targetId: string, data?: any) => void) {
+    this.diplomacyUI.show(currentPlayer, allPlayers, onAction);
+  }
+
+  /**
+   * Show great people screen
+   */
+  showGreatPeople(
+    player: Player,
+    pointsProgress: Map<GreatPersonType, number>,
+    earnedPeople: GreatPerson[],
+    onActivate: (personId: string, cityId?: string) => void
+  ) {
+    this.greatPeopleUI.show(player, pointsProgress, earnedPeople, onActivate);
+  }
+
+  /**
+   * Show world wonders screen
+   */
+  showWorldWonders(
+    player: Player,
+    wondersManager: WorldWondersManager,
+    era: string,
+    onBuild: (wonderId: string, cityId: string) => void
+  ) {
+    this.worldWondersUI.show(player, wondersManager, era, onBuild);
   }
 
   /**

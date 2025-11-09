@@ -27,6 +27,9 @@ class EmpiresEternalGame {
     this.uiManager.setBuildCityCallback(() => this.handleBuildCity());
     this.uiManager.setRecruitUnitCallback(() => this.handleRecruitUnit());
     this.uiManager.setResearchCallback(() => this.handleResearch());
+    this.uiManager.setDiplomacyCallback(() => this.handleDiplomacy());
+    this.uiManager.setGreatPeopleCallback(() => this.handleGreatPeople());
+    this.uiManager.setWorldWondersCallback(() => this.handleWorldWonders());
 
     this.canvas.addEventListener('click', (e) => this.handleCanvasClick(e));
 
@@ -197,16 +200,124 @@ class EmpiresEternalGame {
       return;
     }
 
-    const tech = prompt('Research tech ID (e.g., agriculture, mining, writing, archery, bronze_working, animal_husbandry, pottery, sailing, masonry, calendars, etc.)');
-
-    if (tech) {
-      const success = this.gameState.startResearch(currentPlayer, tech);
+    // Show technology tree UI
+    this.uiManager.showTechnologyTree(currentPlayer, (techId: string) => {
+      const success = this.gameState!.startResearch(currentPlayer, techId);
 
       // If research failed, show requirements
       if (!success) {
-        this.uiManager.showResearchRequirements(currentPlayer, tech);
+        this.uiManager.showResearchRequirements(currentPlayer, techId);
       }
-    }
+    });
+  }
+
+  private handleDiplomacy() {
+    if (!this.gameState) return;
+
+    const currentPlayer = this.gameState.getCurrentPlayer();
+    const state = this.gameState.getState();
+
+    // Show diplomacy UI
+    this.uiManager.showDiplomacy(currentPlayer, state.players, (action: string, targetId: string, data?: any) => {
+      const diplomacyManager = state.diplomacyManager;
+
+      switch (action) {
+        case 'declare_war':
+          if (diplomacyManager.declareWar(currentPlayer.id, targetId)) {
+            this.gameState!.addNotification(`War declared on ${state.players.find(p => p.id === targetId)?.civilizationId}!`, 'warning');
+          }
+          break;
+
+        case 'make_peace':
+          if (diplomacyManager.makePeace(currentPlayer.id, targetId)) {
+            this.gameState!.addNotification(`Peace made with ${state.players.find(p => p.id === targetId)?.civilizationId}`, 'success');
+          }
+          break;
+
+        case 'form_alliance':
+          if (diplomacyManager.formAlliance(currentPlayer.id, targetId, state.turn)) {
+            this.gameState!.addNotification(`Alliance formed with ${state.players.find(p => p.id === targetId)?.civilizationId}!`, 'success');
+          }
+          break;
+
+        case 'break_alliance':
+          if (diplomacyManager.breakAlliance(currentPlayer.id, targetId)) {
+            this.gameState!.addNotification(`Alliance broken with ${state.players.find(p => p.id === targetId)?.civilizationId}`, 'warning');
+          }
+          break;
+
+        case 'propose_trade':
+          // TODO: Open trade dialog
+          this.gameState!.addNotification('Trade system coming soon!', 'info');
+          break;
+      }
+    });
+  }
+
+  private handleGreatPeople() {
+    if (!this.gameState) return;
+
+    const currentPlayer = this.gameState.getCurrentPlayer();
+    const state = this.gameState.getState();
+    const greatPeopleManager = state.greatPeopleManager;
+
+    // Get progress and earned great people
+    const pointsProgress = greatPeopleManager.getProgress(currentPlayer.id);
+    const earnedPeople = greatPeopleManager.getPlayerGreatPeople(currentPlayer.id);
+
+    // Show great people UI
+    this.uiManager.showGreatPeople(currentPlayer, pointsProgress, earnedPeople, (personId: string, cityId?: string) => {
+      const city = cityId ? currentPlayer.cities.find(c => c.id === cityId) : undefined;
+
+      // Use the great person's ability
+      greatPeopleManager.useGreatPerson(personId, currentPlayer, city);
+
+      // Remove from earned list (great people can only be used once)
+      const personIndex = earnedPeople.findIndex(p => p.id === personId);
+      if (personIndex >= 0) {
+        const person = earnedPeople[personIndex];
+        this.gameState!.addNotification(`${person.name} activated: ${person.ability.name}!`, 'success');
+      }
+    });
+  }
+
+  private handleWorldWonders() {
+    if (!this.gameState) return;
+
+    const currentPlayer = this.gameState.getCurrentPlayer();
+    const state = this.gameState.getState();
+    const wondersManager = state.worldWondersManager;
+
+    // Show world wonders UI
+    this.uiManager.showWorldWonders(currentPlayer, wondersManager, state.era, (wonderId: string, cityId: string) => {
+      const city = currentPlayer.cities.find(c => c.id === cityId);
+      if (!city) {
+        this.gameState!.addNotification('City not found!', 'error');
+        return;
+      }
+
+      // Check if wonder is available
+      if (!wondersManager.isAvailable(wonderId)) {
+        this.gameState!.addNotification('This wonder has already been built by another civilization!', 'warning');
+        return;
+      }
+
+      // Build the wonder
+      const success = wondersManager.buildWonder(wonderId, currentPlayer.id, cityId, state.turn);
+      if (success) {
+        const wonder = wondersManager.getWonder(wonderId);
+        if (wonder) {
+          this.gameState!.addNotification(`Started building ${wonder.name} in ${city.name}!`, 'success');
+
+          // Execute onComplete callback if exists
+          if (wonder.onComplete) {
+            wonder.onComplete(currentPlayer, city);
+          }
+        }
+      } else {
+        this.gameState!.addNotification('Failed to build wonder!', 'error');
+      }
+    });
   }
 
   private handleResize() {
