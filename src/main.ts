@@ -32,8 +32,19 @@ class EmpiresEternalGame {
     this.uiManager.setWorldWondersCallback(() => this.handleWorldWonders());
 
     this.canvas.addEventListener('click', (e) => this.handleCanvasClick(e));
+    this.canvas.addEventListener('mousemove', (e) => this.handleCanvasMouseMove(e));
 
     window.addEventListener('resize', () => this.handleResize());
+
+    // ESC key to cancel city founding mode
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && this.renderer.isCityFoundingMode()) {
+        this.renderer.disableCityFoundingMode();
+        if (this.gameState) {
+          this.gameState.addNotification('City founding cancelled', 'info');
+        }
+      }
+    });
   }
 
   private startGame(civId: string) {
@@ -45,6 +56,10 @@ class EmpiresEternalGame {
     };
 
     this.gameState = new GameStateManager(config);
+
+    // Connect renderer to game state for animations
+    this.gameState.setRenderer(this.renderer);
+
     const state = this.gameState.initializeGame(civId);
 
     const player = this.gameState.getCurrentPlayer();
@@ -94,10 +109,45 @@ class EmpiresEternalGame {
     if (tilePos.x >= 0 && tilePos.x < state.config.mapWidth &&
         tilePos.y >= 0 && tilePos.y < state.config.mapHeight) {
 
+      // Check if in city founding mode
+      if (this.renderer.isCityFoundingMode()) {
+        const currentPlayer = this.gameState.getCurrentPlayer();
+        const selectedUnit = state.selectedUnit;
+
+        if (selectedUnit && selectedUnit.type === 'settler' && selectedUnit.ownerId === currentPlayer.id) {
+          // Attempt to found city at clicked location
+          const tile = this.gameState.getTile(tilePos.x, tilePos.y);
+
+          // Move settler to location first if not already there
+          if (selectedUnit.x !== tilePos.x || selectedUnit.y !== tilePos.y) {
+            this.gameState.moveUnit(selectedUnit, tilePos.x, tilePos.y);
+          }
+
+          // Try to found city
+          const success = this.gameState.foundCityWithSettler(selectedUnit);
+          if (success) {
+            this.renderer.disableCityFoundingMode();
+          }
+        } else {
+          this.renderer.disableCityFoundingMode();
+        }
+        return;
+      }
+
       this.gameState.selectTile(tilePos.x, tilePos.y);
 
       const tile = this.gameState.getTile(tilePos.x, tilePos.y);
       this.uiManager.updateTileInfo(tile, state);
+
+      // Check if selected a settler to enable city founding preview
+      const currentPlayer = this.gameState.getCurrentPlayer();
+      if (tile.unitId) {
+        const selectedUnit = currentPlayer.units.find(u => u.id === tile.unitId);
+        if (selectedUnit && selectedUnit.type === 'settler' && selectedUnit.ownerId === currentPlayer.id) {
+          // Auto-enable city founding mode when settler selected
+          // (user can cancel by pressing ESC or clicking elsewhere)
+        }
+      }
     }
   }
 
@@ -151,11 +201,42 @@ class EmpiresEternalGame {
       return;
     }
 
-    // Attempt to found city with settler
-    const success = this.gameState.foundCityWithSettler(selectedUnit);
-    if (!success) {
-      // Error notifications are handled inside foundCityWithSettler
+    // Enable city founding preview mode
+    this.renderer.enableCityFoundingMode();
+    this.gameState.addNotification('Click on a tile to found a city (ESC to cancel)', 'info');
+
+    // Set initial preview at settler location
+    const isValid = this.checkCityFoundingValid(selectedUnit.x, selectedUnit.y);
+    this.renderer.setCityFoundingPreview(selectedUnit.x, selectedUnit.y, isValid);
+  }
+
+  private checkCityFoundingValid(x: number, y: number): boolean {
+    if (!this.gameState) return false;
+
+    const state = this.gameState.getState();
+    const tile = state.map[y][x];
+
+    // Can't build on ocean or mountains
+    if (tile.terrain === 'ocean' || tile.terrain === 'mountains') {
+      return false;
     }
+
+    // Can't build on existing city
+    if (tile.cityId) {
+      return false;
+    }
+
+    // Check minimum distance from other cities (3 tiles)
+    for (const player of state.players) {
+      for (const city of player.cities) {
+        const distance = Math.sqrt(Math.pow(city.x - x, 2) + Math.pow(city.y - y, 2));
+        if (distance < 3) {
+          return false;
+        }
+      }
+    }
+
+    return true;
   }
 
   private handleRecruitUnit() {
@@ -247,8 +328,24 @@ class EmpiresEternalGame {
           break;
 
         case 'propose_trade':
-          // TODO: Open trade dialog
-          this.gameState!.addNotification('Trade system coming soon!', 'info');
+          // Show trade negotiation UI
+          const otherPlayer = state.players.find(p => p.id === targetId);
+          if (otherPlayer) {
+            this.uiManager.showTradeNegotiation(currentPlayer, otherPlayer, (offer: any) => {
+              // TODO: AI should accept/reject/counter the offer
+              // For now, just accept all trades
+              this.gameState!.addNotification(`Trade proposed to ${otherPlayer.civilizationId}`, 'info');
+              // Apply trade immediately (simplified)
+              if (offer.offering.gold) {
+                currentPlayer.resources.gold -= offer.offering.gold;
+                otherPlayer.resources.gold += offer.offering.gold;
+              }
+              if (offer.requesting.gold) {
+                otherPlayer.resources.gold -= offer.requesting.gold;
+                currentPlayer.resources.gold += offer.requesting.gold;
+              }
+            });
+          }
           break;
       }
     });
@@ -267,7 +364,28 @@ class EmpiresEternalGame {
 
     // Show great people UI
     this.uiManager.showGreatPeople(currentPlayer, pointsProgress, earnedPeople, (personId: string, cityId?: string) => {
-      const city = cityId ? currentPlayer.cities.find(c => c.id === cityId) : undefined;
+      // If no city specified but ability requires a city, show city selection
+      if (!cityId && currentPlayer.cities.length > 1) {
+        this.uiManager.showCitySelection(
+          currentPlayer.cities,
+          'Select City',
+          'Choose a city to activate this great person ability',
+          (selectedCity) => {
+            if (selectedCity) {
+              greatPeopleManager.useGreatPerson(personId, currentPlayer, selectedCity);
+              const personIndex = earnedPeople.findIndex(p => p.id === personId);
+              if (personIndex >= 0) {
+                const person = earnedPeople[personIndex];
+                this.gameState!.addNotification(`${person.name} activated: ${person.ability.name}!`, 'success');
+              }
+            }
+          }
+        );
+        return;
+      }
+
+      // Use first city or specified city
+      const city = cityId ? currentPlayer.cities.find(c => c.id === cityId) : currentPlayer.cities[0];
 
       // Use the great person's ability
       greatPeopleManager.useGreatPerson(personId, currentPlayer, city);
@@ -318,6 +436,23 @@ class EmpiresEternalGame {
         this.gameState!.addNotification('Failed to build wonder!', 'error');
       }
     });
+  }
+
+  private handleCanvasMouseMove(e: MouseEvent) {
+    if (!this.gameState || !this.renderer.isCityFoundingMode()) return;
+
+    const rect = this.canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    const tilePos = this.renderer.screenToTile(x, y);
+    const state = this.gameState.getState();
+
+    if (tilePos.x >= 0 && tilePos.x < state.config.mapWidth &&
+        tilePos.y >= 0 && tilePos.y < state.config.mapHeight) {
+      const isValid = this.checkCityFoundingValid(tilePos.x, tilePos.y);
+      this.renderer.setCityFoundingPreview(tilePos.x, tilePos.y, isValid);
+    }
   }
 
   private handleResize() {
