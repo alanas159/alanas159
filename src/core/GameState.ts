@@ -3,8 +3,9 @@ import { MapGenerator } from '../map/MapGenerator';
 import { CIVILIZATIONS } from '../civilizations/CivilizationData';
 import { Pathfinding } from './Pathfinding';
 import { CombatSystem } from './CombatSystem';
-import { getTechnologyById, canResearch } from './TechnologyData';
+import { getTechnologyById, canResearch, TECHNOLOGIES } from './TechnologyData';
 import { getBuildingByType, canBuildBuilding } from './BuildingData';
+import { getUnitData, canRecruitUnit, getUnitCostWithBonuses } from './UnitData';
 
 export class GameStateManager {
   private state: GameState;
@@ -76,6 +77,9 @@ export class GameStateManager {
     };
   }
 
+  /**
+   * Place starting units and cities for all players
+   */
   private placeStartingUnits() {
     const startingLocations: Array<{x: number; y: number}> = [];
 
@@ -87,36 +91,45 @@ export class GameStateManager {
       // Reveal fog of war around starting location
       this.revealArea(start.x, start.y, 3);
 
-      // Create starting city
+      // Create starting city (capital)
       const city = this.foundCity(player.id, start.x, start.y, true);
       if (city) {
         player.cities.push(city);
       }
 
-      // Create starting units
+      // Create starting units using UnitData
       const civ = CIVILIZATIONS.find(c => c.id === player.civilizationId)!;
       civ.startingUnits.forEach((unitType, index) => {
+        const unitData = getUnitData(unitType);
+        if (!unitData) return;
+
+        // Place units around the starting city
         const offset = index * 2;
         const unitX = start.x + offset;
         const unitY = start.y;
 
-        const unit: Unit = {
-          id: `unit-${Date.now()}-${index}`,
-          type: unitType,
-          ownerId: player.id,
-          x: unitX,
-          y: unitY,
-          health: 100,
-          maxHealth: 100,
-          movement: unitType === 'settler' ? 2 : unitType === 'cavalry' ? 4 : 3,
-          maxMovement: unitType === 'settler' ? 2 : unitType === 'cavalry' ? 4 : 3,
-          attack: unitType === 'warrior' ? 10 : unitType === 'archer' ? 8 : unitType === 'cavalry' ? 12 : 5,
-          defense: unitType === 'warrior' ? 8 : unitType === 'archer' ? 5 : unitType === 'cavalry' ? 6 : 10,
-          hasActed: false
-        };
+        // Ensure the tile is valid
+        if (unitX >= 0 && unitX < this.state.config.mapWidth &&
+            unitY >= 0 && unitY < this.state.config.mapHeight) {
 
-        player.units.push(unit);
-        this.state.map[unitY][unitX].unitId = unit.id;
+          const unit: Unit = {
+            id: `unit-${Date.now()}-${index}-${Math.random()}`,
+            type: unitType,
+            ownerId: player.id,
+            x: unitX,
+            y: unitY,
+            health: unitData.stats.health,
+            maxHealth: unitData.stats.health,
+            movement: this.getUnitMovementWithBonus(unitType, player.civilizationId),
+            maxMovement: this.getUnitMovementWithBonus(unitType, player.civilizationId),
+            attack: unitData.stats.attack,
+            defense: unitData.stats.defense,
+            hasActed: false
+          };
+
+          player.units.push(unit);
+          this.state.map[unitY][unitX].unitId = unit.id;
+        }
       });
     });
   }
@@ -138,15 +151,58 @@ export class GameStateManager {
     }
   }
 
-  private foundCity(playerId: string, x: number, y: number, isCapital: boolean): City | null {
+  /**
+   * Found a new city at the specified location
+   * @param playerId - The player founding the city
+   * @param x - X coordinate
+   * @param y - Y coordinate
+   * @param isCapital - Whether this is the capital city
+   * @param settlerUnit - Optional settler unit to consume
+   * @returns The founded city or null if unable to found
+   */
+  private foundCity(playerId: string, x: number, y: number, isCapital: boolean, settlerUnit?: Unit): City | null {
     const tile = this.state.map[y][x];
+
+    // Validate terrain
     if (tile.cityId || tile.terrain === 'ocean' || tile.terrain === 'mountains') {
       return null;
     }
 
-    const cityNames = ['Capital', 'Secondus', 'Tertius', 'Quartus', 'Quintus'];
+    // Check minimum distance from other cities (at least 3 tiles apart)
+    if (!isCapital && !this.isValidCityLocation(x, y, 3)) {
+      this.addNotification('Cities must be at least 3 tiles apart', 'warning');
+      return null;
+    }
+
     const player = this.state.players.find(p => p.id === playerId)!;
+    const cityNames = ['Capital', 'Secondus', 'Tertius', 'Quartus', 'Quintus'];
     const cityName = cityNames[player.cities.length] || `City ${player.cities.length + 1}`;
+
+    // Base production values
+    let baseProduction = {
+      food: 2,
+      production: 1,
+      gold: 1,
+      science: 1,
+      culture: 1
+    };
+
+    // Capital cities get bonuses
+    if (isCapital) {
+      baseProduction = {
+        food: 3,
+        production: 2,
+        gold: 2,
+        science: 2,
+        culture: 3
+      };
+    }
+
+    // Add terrain bonuses
+    const terrainBonus = this.getTerrainProduction(tile);
+    Object.entries(terrainBonus).forEach(([resource, amount]) => {
+      baseProduction[resource as keyof Resources] += amount;
+    });
 
     const city: City = {
       id: `city-${Date.now()}`,
@@ -156,13 +212,7 @@ export class GameStateManager {
       y,
       population: 1,
       territories: [{x, y}],
-      production: {
-        food: 2,
-        production: 1,
-        gold: 1,
-        science: 1,
-        culture: 1
-      },
+      production: baseProduction,
       isCapital,
       buildings: [],
       currentProduction: undefined
@@ -172,7 +222,94 @@ export class GameStateManager {
     tile.ownerId = playerId;
     player.territories.push({x, y});
 
+    // Consume settler unit if provided
+    if (settlerUnit) {
+      this.removeUnit(settlerUnit);
+    }
+
+    this.addNotification(`Founded ${cityName}${isCapital ? ' (Capital)' : ''}!`, 'success');
     return city;
+  }
+
+  /**
+   * Check if a location is valid for founding a city
+   */
+  private isValidCityLocation(x: number, y: number, minDistance: number): boolean {
+    // Check distance from all existing cities
+    for (const player of this.state.players) {
+      for (const city of player.cities) {
+        const distance = Math.sqrt(Math.pow(city.x - x, 2) + Math.pow(city.y - y, 2));
+        if (distance < minDistance) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Get base production from terrain
+   */
+  private getTerrainProduction(tile: Tile): Partial<Record<keyof Resources, number>> {
+    const production: Partial<Record<keyof Resources, number>> = {};
+
+    switch (tile.terrain) {
+      case 'grassland':
+        production.food = 2;
+        break;
+      case 'plains':
+        production.food = 1;
+        production.production = 1;
+        break;
+      case 'hills':
+        production.production = 2;
+        break;
+      case 'forest':
+        production.production = 1;
+        production.food = 1;
+        break;
+      case 'jungle':
+        production.food = 1;
+        production.science = 1;
+        break;
+      case 'desert':
+        production.gold = 1;
+        break;
+    }
+
+    // River bonus
+    if (tile.hasRiver) {
+      production.food = (production.food || 0) + 1;
+      production.gold = (production.gold || 0) + 1;
+    }
+
+    return production;
+  }
+
+  /**
+   * Public method to found a city with a settler
+   */
+  foundCityWithSettler(settlerUnit: Unit): boolean {
+    const player = this.state.players.find(p => p.id === settlerUnit.ownerId)!;
+
+    // Validate settler unit
+    const unitData = getUnitData(settlerUnit.type);
+    if (!unitData?.canFoundCity) {
+      this.addNotification('Only settlers can found cities', 'warning');
+      return false;
+    }
+
+    const city = this.foundCity(player.id, settlerUnit.x, settlerUnit.y, false, settlerUnit);
+    if (city) {
+      player.cities.push(city);
+
+      // Reveal area around new city
+      this.revealArea(city.x, city.y, 2);
+
+      return true;
+    }
+
+    return false;
   }
 
   // End current player's turn
@@ -200,15 +337,25 @@ export class GameStateManager {
     });
   }
 
+  /**
+   * Process turn for a player - collect resources, research, city growth, etc.
+   */
   private processTurn(player: Player) {
+    const civ = CIVILIZATIONS.find(c => c.id === player.civilizationId)!;
+
     // Collect resources from cities
     player.cities.forEach(city => {
-      const civ = CIVILIZATIONS.find(c => c.id === player.civilizationId)!;
-
       // Base city production
       Object.entries(city.production).forEach(([resource, amount]) => {
         player.resources[resource as keyof Resources] += amount;
       });
+
+      // Capital bonus: +50% to all yields
+      if (city.isCapital) {
+        Object.entries(city.production).forEach(([resource, amount]) => {
+          player.resources[resource as keyof Resources] += Math.floor(amount * 0.5);
+        });
+      }
 
       // Add bonuses from buildings
       city.buildings.forEach(buildingType => {
@@ -233,7 +380,7 @@ export class GameStateManager {
         }
       });
 
-      // Process city production
+      // Process city production queue
       if (city.currentProduction) {
         const productionPerTurn = city.production.production || 1;
         city.currentProduction.progress += productionPerTurn;
@@ -253,11 +400,14 @@ export class GameStateManager {
           city.currentProduction = undefined;
         }
       }
+
+      // City growth
+      this.processCityGrowth(city, player);
     });
 
     // Process technology research
     if (player.currentResearch) {
-      const sciencePerTurn = player.resources.science || 1;
+      const sciencePerTurn = Math.max(1, Math.floor(player.resources.science / 2));
       player.currentResearch.progress += sciencePerTurn;
 
       const tech = getTechnologyById(player.currentResearch.techId);
@@ -266,16 +416,132 @@ export class GameStateManager {
         player.technologies.push(tech.id);
         this.addNotification(`Researched ${tech.name}!`, 'success');
         player.currentResearch = undefined;
+
+        // Check for era advancement
+        this.checkEraAdvancement(player);
+      }
+    }
+  }
+
+  /**
+   * Process city population growth
+   */
+  private processCityGrowth(city: City, player: Player) {
+    // Food required for next population = current population * 15
+    const foodRequired = city.population * 15;
+    const foodPerTurn = city.production.food || 0;
+
+    // Track food accumulation (simplified - using player resources as temporary storage)
+    const cityFoodKey = `city_${city.id}_food`;
+
+    // Simple growth: every few turns based on food production
+    if (foodPerTurn >= 3 && this.state.turn % 10 === 0) {
+      city.population++;
+
+      // Expand territory when population grows
+      if (city.population % 3 === 0) {
+        this.expandCityTerritory(city);
+      }
+
+      // Update city production based on new population
+      city.production.food = (city.production.food || 0) + 0.5;
+      city.production.production = (city.production.production || 0) + 0.5;
+
+      this.addNotification(`${city.name} grew to population ${city.population}!`, 'success');
+    }
+  }
+
+  /**
+   * Expand city territory to adjacent tiles
+   */
+  private expandCityTerritory(city: City) {
+    const directions = [
+      [0, -1], [1, -1], [1, 0], [1, 1],
+      [0, 1], [-1, 1], [-1, 0], [-1, -1]
+    ];
+
+    for (const [dx, dy] of directions) {
+      const x = city.x + dx;
+      const y = city.y + dy;
+
+      if (x >= 0 && x < this.state.config.mapWidth && y >= 0 && y < this.state.config.mapHeight) {
+        const tile = this.state.map[y][x];
+
+        // Check if tile is not already owned and is valid terrain
+        if (!tile.ownerId && tile.terrain !== 'ocean' && tile.terrain !== 'mountains') {
+          // Check if not already in city territories
+          const alreadyOwned = city.territories.some(t => t.x === x && t.y === y);
+          if (!alreadyOwned) {
+            city.territories.push({x, y});
+            tile.ownerId = city.ownerId;
+
+            // Add terrain production to city
+            const terrainBonus = this.getTerrainProduction(tile);
+            Object.entries(terrainBonus).forEach(([resource, amount]) => {
+              city.production[resource as keyof Resources] =
+                (city.production[resource as keyof Resources] || 0) + amount;
+            });
+
+            return; // Expand one tile at a time
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Check if player should advance to next era
+   */
+  private checkEraAdvancement(player: Player) {
+    const techCount = player.technologies.length;
+
+    // Count technologies by era
+    const antiquityTechs = player.technologies.filter(techId => {
+      const tech = getTechnologyById(techId);
+      return tech?.era === 'antiquity';
+    }).length;
+
+    const medievalTechs = player.technologies.filter(techId => {
+      const tech = getTechnologyById(techId);
+      return tech?.era === 'medieval';
+    }).length;
+
+    // Advance to Medieval era if 6+ antiquity techs researched
+    if (player.era === 'antiquity' && antiquityTechs >= 6) {
+      player.era = 'medieval';
+      this.addNotification('Advanced to Medieval Era!', 'success');
+    }
+
+    // Advance to Modern era if 6+ medieval techs researched
+    if (player.era === 'medieval' && medievalTechs >= 6) {
+      player.era = 'modern';
+      this.addNotification('Advanced to Modern Era!', 'success');
+    }
+
+    // Update game state era based on most advanced player
+    const mostAdvancedEra = this.getMostAdvancedEra();
+    if (mostAdvancedEra !== this.state.era) {
+      this.state.era = mostAdvancedEra;
+    }
+  }
+
+  /**
+   * Get the most advanced era among all players
+   */
+  private getMostAdvancedEra(): 'antiquity' | 'medieval' | 'modern' {
+    const eraOrder = { 'antiquity': 0, 'medieval': 1, 'modern': 2 };
+    let maxEra: 'antiquity' | 'medieval' | 'modern' = 'antiquity';
+    let maxValue = 0;
+
+    for (const player of this.state.players) {
+      const eraValue = eraOrder[player.era];
+      if (eraValue > maxValue) {
+        maxValue = eraValue;
+        maxEra = player.era;
       }
     }
 
-    // Grow population (simplified)
-    player.cities.forEach(city => {
-      if (player.resources.food >= city.population * 10) {
-        city.population++;
-        player.resources.food -= city.population * 10;
-      }
-    });
+    return maxEra;
   }
 
   getState(): GameState {
@@ -299,22 +565,60 @@ export class GameStateManager {
 
   // ========== TECHNOLOGY SYSTEM ==========
 
+  /**
+   * Start researching a technology
+   * Validates prerequisites and current research status
+   */
   startResearch(player: Player, techId: string): boolean {
-    if (!canResearch(techId, player.technologies)) {
-      this.addNotification('Cannot research this technology yet', 'warning');
+    // Check if already researching
+    if (player.currentResearch) {
+      this.addNotification('Already researching a technology', 'warning');
       return false;
     }
 
+    // Validate technology exists
     const tech = getTechnologyById(techId);
-    if (!tech) return false;
+    if (!tech) {
+      this.addNotification('Unknown technology', 'error');
+      return false;
+    }
 
+    // Check if already researched
+    if (player.technologies.includes(techId)) {
+      this.addNotification(`Already researched ${tech.name}`, 'warning');
+      return false;
+    }
+
+    // Check prerequisites
+    if (!canResearch(techId, player.technologies)) {
+      const missingPrereqs = tech.prerequisites
+        .filter(prereq => !player.technologies.includes(prereq))
+        .map(prereq => getTechnologyById(prereq)?.name || prereq);
+
+      this.addNotification(
+        `Requires: ${missingPrereqs.join(', ')}`,
+        'warning'
+      );
+      return false;
+    }
+
+    // Start research
     player.currentResearch = {
       techId,
       progress: 0
     };
 
-    this.addNotification(`Researching ${tech.name}`, 'info');
+    this.addNotification(`Researching ${tech.name} (Cost: ${tech.cost})`, 'info');
     return true;
+  }
+
+  /**
+   * Get available technologies to research
+   */
+  getAvailableTechnologies(player: Player): string[] {
+    return TECHNOLOGIES
+      .filter(tech => canResearch(tech.id, player.technologies))
+      .map(tech => tech.id);
   }
 
   // ========== BUILDING SYSTEM ==========
@@ -343,115 +647,128 @@ export class GameStateManager {
 
   // ========== UNIT SYSTEM ==========
 
+  /**
+   * Recruit a unit in a city
+   * Checks technology requirements, resources, and civilization bonuses
+   */
   recruitUnit(city: City, unitType: UnitType): boolean {
     const player = this.state.players.find(p => p.id === city.ownerId)!;
-    const costs = this.getUnitCost(unitType);
+    const unitData = getUnitData(unitType);
+
+    // Validate unit type
+    if (!unitData) {
+      this.addNotification('Invalid unit type', 'error');
+      return false;
+    }
+
+    // Check technology requirements
+    if (!canRecruitUnit(unitType, player.technologies)) {
+      const techName = unitData.requiredTech
+        ? getTechnologyById(unitData.requiredTech)?.name
+        : 'Unknown';
+      this.addNotification(
+        `Requires ${techName} technology`,
+        'warning'
+      );
+      return false;
+    }
+
+    // Get costs with civilization bonuses
+    const costs = getUnitCostWithBonuses(unitType, player.civilizationId);
 
     // Check if can afford
-    if (player.resources.production < costs.production || player.resources.gold < (costs.gold || 0)) {
-      this.addNotification('Not enough resources to recruit unit', 'warning');
+    if (player.resources.production < costs.production) {
+      this.addNotification(
+        `Need ${costs.production} production (have ${Math.floor(player.resources.production)})`,
+        'warning'
+      );
+      return false;
+    }
+
+    if (costs.gold && player.resources.gold < costs.gold) {
+      this.addNotification(
+        `Need ${costs.gold} gold (have ${Math.floor(player.resources.gold)})`,
+        'warning'
+      );
       return false;
     }
 
     // Find empty adjacent tile
-    const adjacentTiles = [
-      {x: city.x + 1, y: city.y},
-      {x: city.x - 1, y: city.y},
-      {x: city.x, y: city.y + 1},
-      {x: city.x, y: city.y - 1}
-    ];
-
-    let spawnTile = null;
-    for (const pos of adjacentTiles) {
-      const tile = this.getTile(pos.x, pos.y);
-      if (tile && !tile.unitId && tile.terrain !== 'ocean' && tile.terrain !== 'mountains') {
-        spawnTile = pos;
-        break;
-      }
-    }
-
+    const spawnTile = this.findEmptyAdjacentTile(city.x, city.y);
     if (!spawnTile) {
-      this.addNotification('No space to recruit unit', 'warning');
+      this.addNotification('No space to recruit unit - city surrounded', 'warning');
       return false;
     }
 
     // Deduct costs
     player.resources.production -= costs.production;
-    if (costs.gold) player.resources.gold -= costs.gold;
+    if (costs.gold) {
+      player.resources.gold -= costs.gold;
+    }
 
-    // Create unit
+    // Create unit with stats from UnitData
     const unit: Unit = {
-      id: `unit-${Date.now()}`,
+      id: `unit-${Date.now()}-${Math.random()}`,
       type: unitType,
       ownerId: player.id,
       x: spawnTile.x,
       y: spawnTile.y,
-      health: 100,
-      maxHealth: 100,
-      movement: this.getUnitMovement(unitType),
-      maxMovement: this.getUnitMovement(unitType),
-      attack: this.getUnitAttack(unitType),
-      defense: this.getUnitDefense(unitType),
+      health: unitData.stats.health,
+      maxHealth: unitData.stats.health,
+      movement: this.getUnitMovementWithBonus(unitType, player.civilizationId),
+      maxMovement: this.getUnitMovementWithBonus(unitType, player.civilizationId),
+      attack: unitData.stats.attack,
+      defense: unitData.stats.defense,
       hasActed: false
     };
 
     player.units.push(unit);
     this.state.map[spawnTile.y][spawnTile.x].unitId = unit.id;
 
-    this.addNotification(`${city.name} recruited ${unitType}`, 'success');
+    this.addNotification(`${city.name} recruited ${unitData.name}!`, 'success');
     return true;
   }
 
-  private getUnitCost(unitType: UnitType): {production: number; gold?: number} {
-    const costs: Record<UnitType, {production: number; gold?: number}> = {
-      settler: {production: 50},
-      warrior: {production: 20},
-      spearman: {production: 30},
-      archer: {production: 25},
-      swordsman: {production: 40, gold: 10},
-      cavalry: {production: 45, gold: 15},
-      siege: {production: 60, gold: 20}
-    };
-    return costs[unitType] || {production: 20};
+  /**
+   * Find an empty adjacent tile for unit spawning
+   */
+  private findEmptyAdjacentTile(x: number, y: number): {x: number; y: number} | null {
+    const adjacentTiles = [
+      {x: x + 1, y: y},
+      {x: x - 1, y: y},
+      {x: x, y: y + 1},
+      {x: x, y: y - 1},
+      {x: x + 1, y: y + 1},
+      {x: x - 1, y: y - 1},
+      {x: x + 1, y: y - 1},
+      {x: x - 1, y: y + 1}
+    ];
+
+    for (const pos of adjacentTiles) {
+      const tile = this.getTile(pos.x, pos.y);
+      if (tile && !tile.unitId && tile.terrain !== 'ocean' && tile.terrain !== 'mountains') {
+        return pos;
+      }
+    }
+
+    return null;
   }
 
-  private getUnitMovement(unitType: UnitType): number {
-    const movements: Record<UnitType, number> = {
-      settler: 2,
-      warrior: 2,
-      spearman: 2,
-      archer: 2,
-      swordsman: 2,
-      cavalry: 4,
-      siege: 1
-    };
-    return movements[unitType] || 2;
-  }
+  /**
+   * Get unit movement with civilization bonuses
+   */
+  private getUnitMovementWithBonus(unitType: UnitType, civilizationId: string): number {
+    const unitData = getUnitData(unitType);
+    if (!unitData) return 2;
 
-  private getUnitAttack(unitType: UnitType): number {
-    const attacks: Record<UnitType, number> = {
-      settler: 0,
-      warrior: 10,
-      spearman: 12,
-      archer: 8,
-      swordsman: 15,
-      cavalry: 14,
-      siege: 20
-    };
-    return attacks[unitType] || 10;
-  }
+    let movement = unitData.stats.movement;
 
-  private getUnitDefense(unitType: UnitType): number {
-    const defenses: Record<UnitType, number> = {
-      settler: 5,
-      warrior: 8,
-      spearman: 14,
-      archer: 5,
-      swordsman: 10,
-      cavalry: 6,
-      siege: 5
-    };
-    return defenses[unitType] || 8;
+    // Mongols: Cavalry moves +2 spaces
+    if (civilizationId === 'mongols' && unitType === 'cavalry') {
+      movement += 2;
+    }
+
+    return movement;
   }
 
   // ========== MOVEMENT & COMBAT ==========
