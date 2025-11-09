@@ -12,10 +12,10 @@
     }
 
     body {
-      font-family: 'Georgia', serif;
-      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      font-family: 'Cinzel', 'Georgia', serif;
+      background: linear-gradient(135deg, #0a0e1a 0%, #1a1625 50%, #0f1419 100%);
       overflow: hidden;
-      color: #e0e0e0;
+      color: #e8d5b7;
     }
 
     #game-container {
@@ -27,7 +27,7 @@
     #canvas-container {
       flex: 1;
       position: relative;
-      background: #0f1419;
+      background: radial-gradient(ellipse at center, #0f1419 0%, #050508 100%);
     }
 
     #game-canvas {
@@ -35,116 +35,238 @@
       cursor: crosshair;
     }
 
-    /* Top Status Bar */
+    /* Top Status Bar - Enhanced */
     #top-bar {
       position: absolute;
       top: 0;
       left: 0;
-      right: 360px;
-      height: 60px;
-      background: linear-gradient(180deg, rgba(22, 33, 62, 0.95) 0%, rgba(22, 33, 62, 0.85) 100%);
-      border-bottom: 2px solid #d4af37;
+      right: 380px;
+      height: 70px;
+      background: linear-gradient(180deg, rgba(15, 20, 25, 0.98) 0%, rgba(15, 20, 25, 0.92) 100%);
+      border-bottom: 3px solid #d4af37;
+      border-image: linear-gradient(90deg, #d4af37 0%, #ffd700 50%, #d4af37 100%) 1;
       display: flex;
       align-items: center;
-      padding: 0 20px;
-      gap: 30px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+      padding: 0 25px;
+      gap: 35px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.8), inset 0 -1px 0 rgba(212, 175, 55, 0.2);
       z-index: 10;
+      backdrop-filter: blur(10px);
+    }
+
+    #top-bar::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent 0%, #d4af37 50%, transparent 100%);
     }
 
     .top-bar-section {
       display: flex;
       align-items: center;
-      gap: 20px;
+      gap: 22px;
+    }
+
+    .game-title {
+      display: flex;
+      flex-direction: column;
+      margin-right: 30px;
+      border-right: 2px solid rgba(212, 175, 55, 0.3);
+      padding-right: 30px;
+    }
+
+    .game-title h1 {
+      font-size: 18px;
+      color: #d4af37;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+      margin: 0;
+      line-height: 1;
+    }
+
+    .game-title .subtitle {
+      font-size: 9px;
+      color: #9ca3af;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-top: 3px;
     }
 
     .resource-display {
       display: flex;
       align-items: center;
-      gap: 6px;
-      padding: 8px 12px;
-      background: rgba(0, 0, 0, 0.3);
-      border-radius: 4px;
-      border: 1px solid rgba(212, 175, 55, 0.3);
+      gap: 8px;
+      padding: 10px 14px;
+      background: linear-gradient(135deg, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.3) 100%);
+      border-radius: 8px;
+      border: 1px solid rgba(212, 175, 55, 0.4);
+      transition: all 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .resource-display::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.1), transparent);
+      transition: left 0.5s;
+    }
+
+    .resource-display:hover::before {
+      left: 100%;
+    }
+
+    .resource-display:hover {
+      border-color: rgba(212, 175, 55, 0.8);
+      box-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+      transform: translateY(-1px);
     }
 
     .resource-icon {
-      width: 20px;
-      height: 20px;
+      width: 24px;
+      height: 24px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 11px;
+      font-size: 12px;
       font-weight: bold;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
     }
 
     .resource-value {
-      font-size: 14px;
+      font-size: 16px;
       font-weight: bold;
       color: #d4af37;
-      min-width: 35px;
+      min-width: 40px;
       text-align: right;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
     }
 
     .resource-change {
       font-size: 11px;
       color: #4ade80;
+      font-weight: 600;
+      min-width: 30px;
+      text-shadow: 0 0 4px rgba(74, 222, 128, 0.5);
     }
 
-    /* Minimap */
+    .resource-change.negative {
+      color: #ef4444;
+      text-shadow: 0 0 4px rgba(239, 68, 68, 0.5);
+    }
+
+    /* Era Badge in Top Bar */
+    .era-badge {
+      position: absolute;
+      right: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: linear-gradient(135deg, #d4af37 0%, #ffd700 100%);
+      color: #000;
+      padding: 8px 20px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      box-shadow: 0 4px 12px rgba(212, 175, 55, 0.4);
+      border: 2px solid rgba(255,255,255,0.3);
+    }
+
+    /* Minimap - Enhanced */
     #minimap {
       position: absolute;
       bottom: 20px;
       left: 20px;
-      width: 200px;
-      height: 140px;
-      background: rgba(0, 0, 0, 0.8);
-      border: 2px solid #d4af37;
-      border-radius: 4px;
+      width: 220px;
+      height: 160px;
+      background: linear-gradient(135deg, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.8) 100%);
+      border: 3px solid #d4af37;
+      border-radius: 8px;
       overflow: hidden;
       z-index: 10;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+      box-shadow: 0 6px 25px rgba(0,0,0,0.8), inset 0 0 20px rgba(212, 175, 55, 0.1);
+    }
+
+    #minimap::before {
+      content: 'MINIMAP';
+      position: absolute;
+      top: 5px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 9px;
+      color: #d4af37;
+      letter-spacing: 2px;
+      z-index: 1;
+      text-shadow: 0 0 4px rgba(0,0,0,0.8);
     }
 
     #minimap-canvas {
       display: block;
       width: 100%;
       height: 100%;
+      margin-top: 15px;
     }
 
-    /* Notifications */
+    /* Notifications - Enhanced */
     #notifications {
       position: absolute;
-      top: 80px;
+      top: 90px;
       left: 20px;
-      width: 350px;
-      max-height: 400px;
+      width: 380px;
+      max-height: 450px;
       overflow: hidden;
       z-index: 20;
       pointer-events: none;
     }
 
     .notification {
-      background: rgba(22, 33, 62, 0.95);
-      border: 1px solid #d4af37;
-      border-left: 4px solid #d4af37;
-      padding: 12px 15px;
-      margin-bottom: 10px;
-      border-radius: 4px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.5);
-      animation: slideIn 0.3s ease-out;
+      background: linear-gradient(135deg, rgba(15, 20, 25, 0.98) 0%, rgba(22, 33, 62, 0.95) 100%);
+      border: 2px solid #d4af37;
+      border-left: 5px solid #d4af37;
+      padding: 14px 18px;
+      margin-bottom: 12px;
+      border-radius: 6px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.7);
+      animation: slideIn 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
       pointer-events: all;
+      backdrop-filter: blur(8px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .notification::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 5px;
+      height: 100%;
+      background: inherit;
+      box-shadow: 0 0 15px currentColor;
     }
 
     .notification.info { border-left-color: #3b82f6; }
+    .notification.info::before { background: #3b82f6; }
     .notification.success { border-left-color: #4ade80; }
+    .notification.success::before { background: #4ade80; }
     .notification.warning { border-left-color: #fbbf24; }
+    .notification.warning::before { background: #fbbf24; }
     .notification.error { border-left-color: #ef4444; }
+    .notification.error::before { background: #ef4444; }
 
     @keyframes slideIn {
       from {
-        transform: translateX(-100%);
+        transform: translateX(-120%);
         opacity: 0;
       }
       to {
@@ -153,56 +275,87 @@
       }
     }
 
-    /* UI Panel */
+    /* UI Panel - Enhanced */
     #ui-panel {
-      width: 340px;
-      background: rgba(22, 33, 62, 0.95);
-      border-left: 2px solid #d4af37;
+      width: 360px;
+      background: linear-gradient(180deg, rgba(15, 20, 25, 0.98) 0%, rgba(10, 14, 26, 0.98) 100%);
+      border-left: 3px solid #d4af37;
       padding: 20px;
       overflow-y: auto;
-      box-shadow: -5px 0 15px rgba(0,0,0,0.5);
+      box-shadow: -8px 0 25px rgba(0,0,0,0.8);
+      backdrop-filter: blur(10px);
     }
 
     .ui-section {
-      margin-bottom: 15px;
-      padding: 15px;
-      background: rgba(0, 0, 0, 0.3);
-      border: 1px solid rgba(212, 175, 55, 0.3);
-      border-radius: 6px;
+      margin-bottom: 18px;
+      padding: 16px;
+      background: linear-gradient(135deg, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.3) 100%);
+      border: 2px solid rgba(212, 175, 55, 0.3);
+      border-radius: 8px;
       transition: all 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .ui-section::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #d4af37, transparent);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .ui-section:hover::before {
+      opacity: 1;
     }
 
     .ui-section:hover {
       border-color: rgba(212, 175, 55, 0.6);
-      background: rgba(0, 0, 0, 0.4);
+      background: linear-gradient(135deg, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.4) 100%);
+      box-shadow: 0 0 20px rgba(212, 175, 55, 0.2);
     }
 
     .ui-section h3 {
       color: #d4af37;
-      margin-bottom: 12px;
-      font-size: 15px;
+      margin-bottom: 14px;
+      font-size: 14px;
       text-transform: uppercase;
-      letter-spacing: 1.5px;
+      letter-spacing: 2px;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+      border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+      padding-bottom: 8px;
     }
 
     .section-badge {
-      background: #d4af37;
+      background: linear-gradient(135deg, #d4af37 0%, #ffd700 100%);
       color: #000;
-      padding: 2px 8px;
-      border-radius: 10px;
-      font-size: 10px;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 9px;
       font-weight: bold;
+      letter-spacing: 1px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
     }
 
     .stat-row {
       display: flex;
       justify-content: space-between;
-      padding: 6px 0;
+      padding: 8px 0;
       font-size: 13px;
       border-bottom: 1px solid rgba(255,255,255,0.05);
+      transition: all 0.2s;
+    }
+
+    .stat-row:hover {
+      background: rgba(212, 175, 55, 0.05);
+      padding-left: 5px;
     }
 
     .stat-row:last-child {
@@ -211,44 +364,69 @@
 
     .stat-label {
       color: #9ca3af;
+      font-size: 12px;
     }
 
     .stat-value {
       color: #d4af37;
       font-weight: bold;
+      text-shadow: 0 0 8px rgba(212, 175, 55, 0.5);
     }
 
     .progress-bar {
       width: 100%;
-      height: 8px;
-      background: rgba(0,0,0,0.5);
-      border-radius: 4px;
+      height: 10px;
+      background: rgba(0,0,0,0.6);
+      border-radius: 5px;
       overflow: hidden;
-      margin-top: 8px;
+      margin-top: 10px;
+      border: 1px solid rgba(212, 175, 55, 0.3);
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
     }
 
     .progress-fill {
       height: 100%;
-      background: linear-gradient(90deg, #d4af37 0%, #ffd700 100%);
+      background: linear-gradient(90deg, #aa8c2e 0%, #d4af37 50%, #ffd700 100%);
       transition: width 0.5s ease;
+      box-shadow: 0 0 10px rgba(212, 175, 55, 0.8);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .progress-fill::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+      animation: shimmer 2s infinite;
+    }
+
+    @keyframes shimmer {
+      to {
+        left: 200%;
+      }
     }
 
     .btn {
       width: 100%;
-      padding: 12px;
-      margin: 6px 0;
+      padding: 14px;
+      margin: 8px 0;
       background: linear-gradient(135deg, #d4af37 0%, #aa8c2e 100%);
-      border: none;
-      border-radius: 6px;
+      border: 2px solid rgba(255,255,255,0.2);
+      border-radius: 8px;
       color: #000;
       font-weight: bold;
       cursor: pointer;
       text-transform: uppercase;
       font-size: 12px;
-      letter-spacing: 1px;
+      letter-spacing: 1.5px;
       transition: all 0.3s;
       position: relative;
       overflow: hidden;
+      box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
     }
 
     .btn::before {
@@ -258,21 +436,22 @@
       left: 50%;
       width: 0;
       height: 0;
-      background: rgba(255,255,255,0.3);
+      background: rgba(255,255,255,0.4);
       border-radius: 50%;
       transform: translate(-50%, -50%);
       transition: width 0.6s, height 0.6s;
     }
 
     .btn:hover::before {
-      width: 300px;
-      height: 300px;
+      width: 350px;
+      height: 350px;
     }
 
     .btn:hover {
       background: linear-gradient(135deg, #ffd700 0%, #d4af37 100%);
       transform: translateY(-2px);
-      box-shadow: 0 6px 12px rgba(212, 175, 55, 0.4);
+      box-shadow: 0 8px 20px rgba(212, 175, 55, 0.5);
+      border-color: rgba(255,255,255,0.4);
     }
 
     .btn:active {
@@ -280,59 +459,86 @@
     }
 
     .btn:disabled {
-      background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+      background: linear-gradient(135deg, #3a3a3a 0%, #2a2a2a 100%);
       cursor: not-allowed;
       transform: none;
-      opacity: 0.6;
+      opacity: 0.5;
+      border-color: rgba(255,255,255,0.1);
+      box-shadow: none;
     }
 
     .btn-small {
-      padding: 6px 12px;
+      padding: 8px 14px;
       font-size: 10px;
       width: auto;
+      margin: 4px 2px;
     }
 
-    /* Civilization Selection */
+    /* Civilization Selection - Enhanced */
     #civ-selection {
       position: absolute;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      background: rgba(22, 33, 62, 0.98);
-      border: 3px solid #d4af37;
-      border-radius: 12px;
-      padding: 40px;
-      max-width: 900px;
-      max-height: 85vh;
+      background: linear-gradient(135deg, rgba(10, 14, 26, 0.98) 0%, rgba(15, 20, 25, 0.98) 100%);
+      border: 4px solid #d4af37;
+      border-radius: 16px;
+      padding: 50px;
+      max-width: 950px;
+      max-height: 90vh;
       overflow-y: auto;
       z-index: 1000;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.9);
+      box-shadow: 0 25px 80px rgba(0,0,0,0.95), inset 0 0 100px rgba(212, 175, 55, 0.05);
+      backdrop-filter: blur(15px);
+    }
+
+    #civ-selection::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: radial-gradient(ellipse at center, rgba(212, 175, 55, 0.05) 0%, transparent 70%);
+      pointer-events: none;
     }
 
     #civ-selection h2 {
       color: #d4af37;
       text-align: center;
-      margin-bottom: 30px;
-      font-size: 32px;
+      margin-bottom: 35px;
+      font-size: 36px;
       text-transform: uppercase;
-      letter-spacing: 3px;
-      text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+      letter-spacing: 4px;
+      text-shadow: 0 0 20px rgba(212, 175, 55, 0.5), 2px 2px 6px rgba(0,0,0,0.8);
+      position: relative;
+    }
+
+    #civ-selection h2::after {
+      content: '';
+      position: absolute;
+      bottom: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 200px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #d4af37, transparent);
     }
 
     .civ-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 20px;
-      margin-bottom: 30px;
+      gap: 22px;
+      margin-bottom: 35px;
     }
 
     .civ-card {
-      background: rgba(0, 0, 0, 0.5);
+      background: linear-gradient(135deg, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.4) 100%);
       border: 2px solid #555;
-      border-radius: 8px;
-      padding: 20px;
+      border-radius: 10px;
+      padding: 22px;
       cursor: pointer;
-      transition: all 0.3s;
+      transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
       position: relative;
       overflow: hidden;
     }
@@ -344,8 +550,8 @@
       left: -100%;
       width: 100%;
       height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.1), transparent);
-      transition: left 0.5s;
+      background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.15), transparent);
+      transition: left 0.6s;
     }
 
     .civ-card:hover::before {
@@ -354,49 +560,68 @@
 
     .civ-card:hover {
       border-color: #d4af37;
-      background: rgba(212, 175, 55, 0.15);
-      transform: scale(1.03);
+      background: linear-gradient(135deg, rgba(212, 175, 55, 0.2) 0%, rgba(212, 175, 55, 0.1) 100%);
+      transform: scale(1.05) translateY(-5px);
+      box-shadow: 0 10px 30px rgba(212, 175, 55, 0.3);
     }
 
     .civ-card.selected {
       border-color: #d4af37;
-      background: rgba(212, 175, 55, 0.25);
-      box-shadow: 0 0 30px rgba(212, 175, 55, 0.5);
+      border-width: 3px;
+      background: linear-gradient(135deg, rgba(212, 175, 55, 0.3) 0%, rgba(212, 175, 55, 0.15) 100%);
+      box-shadow: 0 0 40px rgba(212, 175, 55, 0.6), inset 0 0 30px rgba(212, 175, 55, 0.1);
+      transform: scale(1.03);
     }
 
     .civ-card h3 {
       color: #d4af37;
-      margin-bottom: 10px;
-      font-size: 20px;
+      margin-bottom: 12px;
+      font-size: 22px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+      letter-spacing: 1px;
     }
 
     .civ-card p {
       font-size: 13px;
-      line-height: 1.6;
-      color: #ccc;
+      line-height: 1.7;
+      color: #cbd5e1;
+      margin-bottom: 10px;
+    }
+
+    .civ-ability {
+      background: rgba(212, 175, 55, 0.1);
+      border-left: 3px solid #d4af37;
+      padding: 10px;
+      margin: 10px 0;
+      font-size: 11px;
+      color: #d4af37;
+      border-radius: 4px;
     }
 
     .unit-list {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
-      margin-top: 10px;
+      margin-top: 12px;
     }
 
     .unit-badge {
       background: rgba(212, 175, 55, 0.2);
       border: 1px solid #d4af37;
-      padding: 4px 10px;
-      border-radius: 12px;
-      font-size: 11px;
+      padding: 5px 12px;
+      border-radius: 14px;
+      font-size: 10px;
       color: #d4af37;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
     }
 
     .tech-panel {
       background: rgba(0, 0, 0, 0.5);
       border: 1px solid rgba(212, 175, 55, 0.3);
       border-radius: 6px;
-      padding: 10px;
+      padding: 12px;
       margin-top: 8px;
     }
 
@@ -404,16 +629,19 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 8px;
+      padding: 10px;
       background: rgba(255,255,255,0.03);
-      border-radius: 4px;
-      margin: 4px 0;
+      border-radius: 5px;
+      margin: 5px 0;
       cursor: pointer;
       transition: all 0.2s;
+      border: 1px solid transparent;
     }
 
     .tech-item:hover {
-      background: rgba(212, 175, 55, 0.1);
+      background: rgba(212, 175, 55, 0.15);
+      border-color: rgba(212, 175, 55, 0.3);
+      transform: translateX(3px);
     }
 
     .tech-item.researched {
@@ -422,42 +650,60 @@
 
     .tech-item.available {
       border-left: 3px solid #4ade80;
+      box-shadow: 0 0 10px rgba(74, 222, 128, 0.3);
     }
 
     .hidden {
       display: none !important;
     }
 
-    /* Tooltips */
+    /* Tooltips - Enhanced */
     .tooltip {
       position: absolute;
-      background: rgba(22, 33, 62, 0.98);
+      background: linear-gradient(135deg, rgba(15, 20, 25, 0.98) 0%, rgba(22, 33, 62, 0.98) 100%);
       border: 2px solid #d4af37;
-      border-radius: 6px;
-      padding: 12px;
+      border-radius: 8px;
+      padding: 14px;
       font-size: 12px;
-      max-width: 250px;
+      max-width: 280px;
       z-index: 9999;
       pointer-events: none;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.7);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.8);
+      backdrop-filter: blur(10px);
     }
 
-    /* Scrollbar Styling */
+    /* Scrollbar Styling - Enhanced */
     #ui-panel::-webkit-scrollbar {
-      width: 8px;
+      width: 10px;
     }
 
     #ui-panel::-webkit-scrollbar-track {
-      background: rgba(0,0,0,0.3);
+      background: rgba(0,0,0,0.4);
+      border-radius: 5px;
     }
 
     #ui-panel::-webkit-scrollbar-thumb {
-      background: #d4af37;
-      border-radius: 4px;
+      background: linear-gradient(180deg, #d4af37 0%, #aa8c2e 100%);
+      border-radius: 5px;
+      border: 2px solid rgba(0,0,0,0.3);
     }
 
     #ui-panel::-webkit-scrollbar-thumb:hover {
-      background: #ffd700;
+      background: linear-gradient(180deg, #ffd700 0%, #d4af37 100%);
+    }
+
+    #civ-selection::-webkit-scrollbar {
+      width: 10px;
+    }
+
+    #civ-selection::-webkit-scrollbar-track {
+      background: rgba(0,0,0,0.4);
+      border-radius: 5px;
+    }
+
+    #civ-selection::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, #d4af37 0%, #aa8c2e 100%);
+      border-radius: 5px;
     }
   </style>
 </head>
@@ -466,6 +712,10 @@
     <div id="canvas-container">
       <!-- Top Status Bar -->
       <div id="top-bar">
+        <div class="game-title">
+          <h1>⚔️ EMPIRES ETERNAL</h1>
+          <span class="subtitle">Turn-Based Strategy</span>
+        </div>
         <div class="top-bar-section">
           <div class="resource-display">
             <div class="resource-icon" style="background: #4ade80;">🌾</div>
@@ -493,6 +743,7 @@
             <span class="resource-change" id="top-culture-change">+0</span>
           </div>
         </div>
+        <div class="era-badge" id="era-badge">ANTIQUITY</div>
       </div>
 
       <canvas id="game-canvas"></canvas>
@@ -507,89 +758,89 @@
 
       <!-- Civilization Selection Screen -->
       <div id="civ-selection">
-        <h2>⚔️ Choose Your Civilization ⚔️</h2>
+        <h2>⚔️ CHOOSE YOUR CIVILIZATION ⚔️</h2>
         <div class="civ-grid" id="civ-grid"></div>
-        <button class="btn" id="start-game-btn" disabled>🏛️ Begin Your Empire 🏛️</button>
+        <button class="btn" id="start-game-btn" disabled>🏛️ BEGIN YOUR EMPIRE 🏛️</button>
       </div>
     </div>
 
     <!-- UI Panel -->
     <div id="ui-panel">
       <div class="ui-section">
-        <h3>🏛️ Civilization</h3>
+        <h3>🏛️ CIVILIZATION</h3>
         <div id="civ-info">
-          <p id="civ-name" style="font-size: 16px; font-weight: bold; color: #d4af37;">Select a civilization</p>
-          <p id="civ-ability" style="font-size: 11px; margin-top: 5px; color: #9ca3af;"></p>
+          <p id="civ-name" style="font-size: 17px; font-weight: bold; color: #d4af37; margin-bottom: 8px;">Select a civilization</p>
+          <p id="civ-ability" style="font-size: 11px; color: #9ca3af; line-height: 1.6;"></p>
         </div>
       </div>
 
       <div class="ui-section">
-        <h3>📊 Empire Stats</h3>
+        <h3>📊 EMPIRE STATS</h3>
         <div class="stat-row">
-          <span class="stat-label">Cities:</span>
+          <span class="stat-label">🏰 Cities:</span>
           <span class="stat-value" id="city-count">0</span>
         </div>
         <div class="stat-row">
-          <span class="stat-label">Population:</span>
+          <span class="stat-label">👥 Population:</span>
           <span class="stat-value" id="total-population">0</span>
         </div>
         <div class="stat-row">
-          <span class="stat-label">Units:</span>
+          <span class="stat-label">⚔️ Units:</span>
           <span class="stat-value" id="unit-count">0</span>
         </div>
         <div class="stat-row">
-          <span class="stat-label">Territory:</span>
-          <span class="stat-value" id="territory-count">0</span>
+          <span class="stat-label">🗺️ Territory:</span>
+          <span class="stat-value" id="territory-count">0 tiles</span>
         </div>
       </div>
 
       <div class="ui-section">
-        <h3>⚡ Turn Info</h3>
+        <h3>⚡ TURN INFO</h3>
         <div class="stat-row">
-          <span class="stat-label">Turn:</span>
+          <span class="stat-label">📅 Turn:</span>
           <span class="stat-value" id="turn-number">1</span>
         </div>
         <div class="stat-row">
-          <span class="stat-label">Era:</span>
+          <span class="stat-label">🏺 Era:</span>
           <span class="stat-value" id="era">Antiquity</span>
         </div>
       </div>
 
       <div class="ui-section">
-        <h3>🔬 Technology</h3>
+        <h3>🔬 TECHNOLOGY</h3>
         <div id="tech-panel" class="tech-panel">
           <p style="font-size: 11px; color: #9ca3af; margin-bottom: 8px;">Current Research:</p>
-          <div id="current-tech" style="font-size: 12px; color: #d4af37;">None</div>
-          <div class="progress-bar" style="margin-top: 8px;">
+          <div id="current-tech" style="font-size: 13px; color: #d4af37; font-weight: bold;">None</div>
+          <div class="progress-bar" style="margin-top: 10px;">
             <div class="progress-fill" id="tech-progress" style="width: 0%"></div>
           </div>
         </div>
       </div>
 
       <div class="ui-section">
-        <h3>🎯 Actions</h3>
-        <button class="btn" id="end-turn-btn">⏭️ End Turn</button>
-        <button class="btn" id="build-city-btn" disabled>🏰 Found City</button>
-        <button class="btn" id="recruit-unit-btn" disabled>⚔️ Recruit Unit</button>
-        <button class="btn" id="research-btn" disabled>🔬 Research Tech</button>
+        <h3>🎯 ACTIONS</h3>
+        <button class="btn" id="end-turn-btn">⏭️ END TURN</button>
+        <button class="btn" id="build-city-btn" disabled>🏰 FOUND CITY</button>
+        <button class="btn" id="recruit-unit-btn" disabled>⚔️ RECRUIT UNIT</button>
+        <button class="btn" id="research-btn" disabled>🔬 RESEARCH TECH</button>
       </div>
 
       <div class="ui-section">
-        <h3>📍 Selected Tile</h3>
+        <h3>📍 SELECTED TILE</h3>
         <div id="tile-info">
           <p style="font-size: 12px; color: #9ca3af;">Click a tile to view details</p>
         </div>
       </div>
 
       <div class="ui-section" id="selected-unit-section" style="display: none;">
-        <h3>⚔️ Selected Unit</h3>
+        <h3>⚔️ SELECTED UNIT</h3>
         <div id="unit-info"></div>
         <button class="btn btn-small" id="move-unit-btn">📍 Move Unit</button>
         <button class="btn btn-small" id="attack-btn" disabled>⚔️ Attack</button>
       </div>
 
       <div class="ui-section" id="selected-city-section" style="display: none;">
-        <h3>🏰 City Management</h3>
+        <h3>🏰 CITY MANAGEMENT</h3>
         <div id="city-info"></div>
         <button class="btn btn-small" id="city-production-btn">🔨 Set Production</button>
       </div>
