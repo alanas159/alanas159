@@ -132,11 +132,21 @@ class EmpiresEternalGame {
         const unit = currentPlayer.units.find(u => u.id === tile.unitId);
 
         if (unit && unit.type === 'settler' && unit.ownerId === currentPlayer.id) {
-          this.gameState.addNotification('City founding: Click settler then build city button', 'info');
+          // Attempt to found city with settler
+          const success = this.gameState.foundCityWithSettler(unit);
+          if (!success) {
+            // Error notifications are handled inside foundCityWithSettler
+          }
+        } else if (unit && unit.ownerId === currentPlayer.id) {
+          this.gameState.addNotification('Only settlers can found cities', 'warning');
         } else {
           this.gameState.addNotification('Select your settler unit to found a city', 'warning');
         }
+      } else {
+        this.gameState.addNotification('Select a settler to found a city', 'warning');
       }
+    } else {
+      this.gameState.addNotification('Select a tile with your settler', 'warning');
     }
   }
 
