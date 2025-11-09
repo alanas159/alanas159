@@ -5,11 +5,15 @@ export type TerrainType = 'ocean' | 'plains' | 'grassland' | 'desert' | 'tundra'
 
 export type ResourceType = 'food' | 'production' | 'gold' | 'science' | 'culture';
 
+export type StrategicResourceType = 'iron' | 'horses' | 'wheat' | 'fish' | 'stone' | 'luxury';
+
 export type VictoryType = 'military' | 'economic' | 'scientific' | 'cultural';
 
 export type EraType = 'antiquity' | 'exploration' | 'modern';
 
-export type UnitType = 'settler' | 'warrior' | 'archer' | 'cavalry' | 'siege';
+export type UnitType = 'settler' | 'warrior' | 'archer' | 'cavalry' | 'siege' | 'spearman' | 'swordsman';
+
+export type BuildingType = 'barracks' | 'granary' | 'library' | 'market' | 'walls' | 'temple' | 'workshop' | 'university';
 
 export interface Tile {
   x: number;
@@ -18,9 +22,12 @@ export interface Tile {
   explored: boolean;
   visible: boolean;
   resources: Partial<Record<ResourceType, number>>;
+  strategicResource?: StrategicResourceType;
+  hasRiver?: boolean;
   cityId?: string;
   unitId?: string;
   ownerId?: string; // Player/civilization ID
+  improvementType?: string; // Farm, mine, etc.
 }
 
 export interface Resources {
@@ -62,6 +69,13 @@ export interface Unit {
   hasActed: boolean;
 }
 
+export interface Building {
+  type: BuildingType;
+  name: string;
+  cost: Partial<Record<ResourceType, number>>;
+  effects: Partial<Record<ResourceType, number>>;
+}
+
 export interface City {
   id: string;
   name: string;
@@ -72,6 +86,22 @@ export interface City {
   territories: Array<{x: number; y: number}>;
   production: Partial<Record<ResourceType, number>>;
   isCapital: boolean;
+  buildings: BuildingType[];
+  currentProduction?: {
+    type: 'unit' | 'building';
+    name: string;
+    progress: number;
+    required: number;
+  };
+}
+
+export interface Technology {
+  id: string;
+  name: string;
+  cost: number;
+  era: EraType;
+  prerequisites: string[];
+  unlocks: string[];
 }
 
 export interface Player {
@@ -83,6 +113,11 @@ export interface Player {
   territories: Array<{x: number; y: number}>;
   era: EraType;
   isAI: boolean;
+  technologies: string[];
+  currentResearch?: {
+    techId: string;
+    progress: number;
+  };
 }
 
 export interface GameConfig {
@@ -101,4 +136,6 @@ export interface GameState {
   config: GameConfig;
   selectedTile: {x: number; y: number} | null;
   selectedUnit: Unit | null;
+  selectedCity: City | null;
+  notifications: Array<{message: string; type: 'info' | 'success' | 'warning' | 'error'; timestamp: number}>;
 }
