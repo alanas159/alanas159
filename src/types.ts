@@ -9,7 +9,7 @@ export type StrategicResourceType = 'iron' | 'horses' | 'wheat' | 'fish' | 'ston
 
 export type VictoryType = 'military' | 'economic' | 'scientific' | 'cultural';
 
-export type EraType = 'antiquity' | 'exploration' | 'modern';
+export type EraType = 'antiquity' | 'medieval' | 'modern';
 
 export type UnitType = 'settler' | 'warrior' | 'archer' | 'cavalry' | 'siege' | 'spearman' | 'swordsman';
 
@@ -28,6 +28,8 @@ export interface Tile {
   unitId?: string;
   ownerId?: string; // Player/civilization ID
   improvementType?: string; // Farm, mine, etc.
+  occupyingUnitId?: string; // Unit attempting to occupy this tile
+  occupationProgress?: number; // Turns occupied (0-3)
 }
 
 export interface Resources {
@@ -49,8 +51,10 @@ export interface CivilizationData {
   name: string;
   description: string;
   color: string;
+  capitalName: string;
   bonuses: CivilizationBonus[];
   startingUnits: UnitType[];
+  startingTechnologies: string[];
   uniqueAbility: string;
 }
 
@@ -100,8 +104,14 @@ export interface Technology {
   name: string;
   cost: number;
   era: EraType;
+  branch: 'military' | 'economy' | 'infrastructure' | 'naval' | 'science_culture';
   prerequisites: string[];
   unlocks: string[];
+  bonus?: {
+    type: 'production' | 'food' | 'gold' | 'science' | 'culture' | 'movement' | 'defense' | 'attack';
+    amount: number;
+    description: string;
+  };
 }
 
 export interface Player {

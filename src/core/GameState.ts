@@ -72,7 +72,7 @@ export class GameStateManager {
       territories: [],
       era: 'antiquity',
       isAI,
-      technologies: [],
+      technologies: [...civ.startingTechnologies], // Copy starting technologies
       currentResearch: undefined
     };
   }
@@ -175,8 +175,16 @@ export class GameStateManager {
     }
 
     const player = this.state.players.find(p => p.id === playerId)!;
-    const cityNames = ['Capital', 'Secondus', 'Tertius', 'Quartus', 'Quintus'];
-    const cityName = cityNames[player.cities.length] || `City ${player.cities.length + 1}`;
+    const civ = CIVILIZATIONS.find(c => c.id === player.civilizationId)!;
+
+    // Use civilization's capital name for first city, generic names for others
+    let cityName: string;
+    if (isCapital) {
+      cityName = civ.capitalName;
+    } else {
+      const cityNames = ['Secondus', 'Tertius', 'Quartus', 'Quintus', 'Sextus', 'Septimus'];
+      cityName = cityNames[player.cities.length - 1] || `City ${player.cities.length + 1}`;
+    }
 
     // Base production values
     let baseProduction = {
