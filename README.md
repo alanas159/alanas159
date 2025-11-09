@@ -1,188 +1,191 @@
-# Dark Ages: Survival
+# Empires Eternal
 
-A feature-complete medieval zombie apocalypse survival RPG built with Phaser 3 and TypeScript.
+**A 2D Turn-Based Strategy Game of World Conquest**
 
-## Game Concept
+Empires Eternal is a classic 4X (eXplore, eXpand, eXploit, eXterminate) strategy game where you lead a historical civilization from humble beginnings to world domination through military might, economic power, scientific advancement, or cultural influence.
 
-Navigate an infinitely-generated medieval world overrun by the undead. Survive increasingly dangerous zombie hordes while gathering resources, building defenses, and managing your base. Features a dynamic day/night cycle, story mode with 3 acts, and endless survival challenges.
+## Game Overview
 
-## Features
+Choose from 8 unique civilizations, each with distinct bonuses and playstyles, and embark on a journey to conquer a procedurally generated world. Build cities, manage resources, recruit armies, research technologies, and outmaneuver your opponents in turn-based strategic warfare.
 
-### Core Gameplay
+### Core Features
 
-**Combat System**
-- 8 weapon types with unique stats (damage, speed, range, durability)
-- Weapon crafting from gathered resources (Wood, Stone, Iron)
-- Attack mechanics with stamina management
-- Weapon durability and breakage system
-- Fists, Wooden Club/Spear, Stone Axe, Iron Sword/Axe, Steel Longsword, Battle Axe
+- **8 Unique Civilizations**: Celts, Romans, Egyptians, Baltic Tribes, Mongols, Mali Empire, Aztecs, and Zulus
+- **Procedural World Generation**: Each game features a unique map with diverse terrains and strategic resources
+- **Fog of War**: Explore the unknown and uncover hidden territories
+- **Resource Management**: Balance Food, Production, Gold, Science, and Culture
+- **Turn-Based Strategy**: Plan your moves carefully in classic turn-based gameplay
+- **Multiple Victory Paths**: Military conquest, economic dominance, scientific supremacy, or cultural influence
 
-**Inventory & Resources**
-- 20-slot inventory system with stackable items
-- 6 resource types: Wood, Stone, Iron, Food, Water, Herbs
-- Resource gathering from world objects (Trees, Rocks, Iron deposits, Berry bushes, Water sources)
-- Automatic resource respawning with timers
+## Civilizations
 
-**Building & Base Defense**
-- 9 building types with progression tiers
-- Grid-based placement system with collision detection
-- Defensive structures that auto-attack zombies:
-  - Wooden/Stone Walls and Gates
-  - Spike Pits (damage on contact)
-  - Archer Towers (ranged auto-attack)
-  - Utility: Campfire, Workbench, Storage, Forge
-- Buildings can be damaged and destroyed by zombies
+### Celts
+**Forest Defenders**
+- Bonus: +2 Production from forests
+- Specialty: Guerrilla warfare and strong defensive positions
+- Best for: Players who enjoy defensive strategies and forest terrain
 
-**Crafting System**
-- Full crafting UI with Weapons and Buildings tabs
-- Recipe unlocking based on day progression
-- Resource cost validation before crafting
-- Instant weapon creation to inventory
-- Building placement mode after crafting structures
+### Romans
+**All Roads Lead to Rome**
+- Bonus: +3 Production for engineering, +2 Gold from trade
+- Specialty: Superior legions and rapid expansion via road networks
+- Best for: Military conquest and efficient empire management
 
-### World & Environment
+### Egyptians
+**Gift of the Nile**
+- Bonus: +3 Food from grasslands, +2 Science
+- Specialty: Early scientific advances and wonder construction
+- Best for: Scientific and cultural victories
 
-**Procedural World Generation**
-- Infinite terrain using chunk-based generation
-- Deterministic seeded random for consistent worlds
-- 16x16 tile chunks spawn dynamically around player
-- Varied terrain (grass/dirt) with natural distribution
-- Resource nodes spawn procedurally per chunk
+### Baltic Tribes
+**Northern Resilience**
+- Bonus: +3 Gold from amber trade, +2 Production from hills
+- Specialty: Hardy warriors adapted to harsh climates
+- Best for: Economic strength and hill/tundra dominance
 
-**Day/Night Cycle**
-- 7-minute days, 3-minute nights (10 min full cycle)
-- Visual day/night overlay
-- Zombies are 50% faster and more aggressive at night
-- Real-time countdown timer in UI
+### Mongols
+**Horde Tactics**
+- Bonus: +2 Production from plains, cavalry moves +2 spaces
+- Specialty: Lightning-fast cavalry assaults
+- Best for: Aggressive military expansion
 
-**Horde Events**
-- Massive zombie attacks every 5 in-game days
-- Progressive difficulty scaling (base 50 zombies × 1.5 per horde)
-- 3-second warning before horde spawns
-- Boss zombies appear in later hordes
+### Mali Empire
+**Trans-Saharan Trade**
+- Bonus: +5 Gold per turn, trade caravans provide intelligence
+- Specialty: Vast wealth and trade route domination
+- Best for: Economic and diplomatic victories
 
-### Zombie Types & Bosses
+### Aztecs
+**Warrior Priests**
+- Bonus: +2 Food and Production from jungles
+- Specialty: Jungle warfare and sacrificial rituals for morale
+- Best for: Players who control jungle territories
 
-**7 Zombie Variants**
-- **Walker**: Basic slow zombie (30 HP, slow)
-- **Runner**: Fast, low health (20 HP, very fast)
-- **Knight**: Armored tank (80 HP, slow, high damage)
-- **Plague Bearer**: Poison damage dealer (40 HP, medium)
-- **Berserker**: NEW - Fast and deadly (60 HP, 15 damage)
-- **Tank**: NEW - Extremely tanky (150 HP, 20 damage)
-- **Plague Lord (BOSS)**: Ultimate challenge (500 HP, 30 damage, 2x size, health bar)
+### Zulus
+**Impi Warriors**
+- Bonus: +3 Food from cattle, melee units cost -25%
+- Specialty: Elite warriors and superior cattle economy
+- Best for: Aggressive military expansion with economic support
 
-**Boss Features**
-- 2x larger sprite
-- Persistent health bar above boss
-- Special death event and cutscene
-- Massive XP rewards (500 XP)
+## Terrain Types
 
-### Story Mode (3 Acts, 40 Days)
+Each terrain type provides different resources and strategic advantages:
 
-**Act 1: The Outbreak** (Days 1-10)
-- Learn survival basics
-- Objectives: Survive to Day 5, gather 50 wood, craft first weapon, build 5 walls, kill 20 zombies
-- Unlocks: Wooden Spear, Spike Pit
+- **Ocean**: Basic food and gold, enables naval movement
+- **Grassland**: High food (+3), ideal for city growth
+- **Plains**: Balanced food and production (+2 each)
+- **Desert**: Low resources, difficult to settle
+- **Tundra**: Cold climate with minimal yields
+- **Snow**: Harsh terrain with no resources
+- **Forest**: High production (+3), provides cover in combat
+- **Jungle**: Balanced resources, ambush opportunities
+- **Hills**: High production (+3), defensive bonuses
+- **Mountains**: Impassable terrain, strategic barriers
 
-**Act 2: Expansion & Fortification** (Days 11-25)
-- Expand territory and build advanced defenses
-- Objectives: Survive to Day 20, craft iron weapon, build stone walls/tower, survive horde, kill 10 Knights
-- Unlocks: Iron Sword, Stone Wall, Archer Tower
+## Game Mechanics
 
-**Act 3: The Reckoning** (Days 26-40)
-- Ultimate endgame content
-- Objectives: Survive to Day 35, craft legendary weapon, defeat Plague Lord boss, build 50+ structures, survive Day 40 horde
-- Unlocks: Steel Longsword, Battle Axe
-- Final Challenge: Choose to cure the plague OR escape to safe lands
+### Resources
 
-**Story Features**
-- Objective tracking system
-- Completion percentage display
-- Automatic progression through acts
-- Stat tracking (zombies killed, buildings built, hordes survived)
+- **Food**: Grows population in cities
+- **Production**: Builds units, buildings, and wonders
+- **Gold**: Maintains armies and enables trade
+- **Science**: Unlocks new technologies
+- **Culture**: Expands territory and influences other civilizations
 
-### NPC Survivors
+### Turn System
 
-**4 NPC Roles**
-- **Farmer**: Produces 2 food per minute
-- **Guard**: Provides passive defense
-- **Blacksmith**: Repairs weapons and buildings
-- **Healer**: Heals player over time
+1. **Resource Collection**: Cities generate resources based on terrain
+2. **Unit Actions**: Move armies, explore, or attack
+3. **City Management**: Build structures, recruit units
+4. **Research**: Advance through technology trees
+5. **Diplomacy**: Negotiate with other civilizations
+6. **End Turn**: AI opponents take their turns
 
-**NPC Features**
-- Assignable to buildings for productivity
-- Color-coded by role
-- Automatic resource production
-- Persistent across save/load
+### Fog of War
 
-### Save/Load System
+- **Unexplored**: Black areas you haven't discovered yet
+- **Explored**: Revealed but not currently visible (dimmed)
+- **Visible**: Areas near your units and cities
 
-**Save Features**
-- LocalStorage-based persistence
-- Complete state saving:
-  - Player position, health, stamina, level, XP
-  - All resources and inventory
-  - Game progress (current day, zombies killed, buildings)
-  - All building positions and health states
-- Version checking for save compatibility
-- Save info display (timestamp, current day)
-- Manual save and delete functionality
+### Victory Conditions
 
-### Tutorial & Onboarding
-
-**7-Step Interactive Tutorial**
-1. Welcome and movement controls
-2. Resource gathering mechanics
-3. Combat system basics
-4. Crafting menu usage
-5. Building placement
-6. Day/night cycle explanation
-7. Horde event preparation
-
-**Tutorial Features**
-- Event-triggered progression
-- Persistent completion tracking
-- Skippable at any time
-- 15-second auto-advance per step
-- Beautiful UI with gold accents
-
-### Graphics & Polish
-
-**Enhanced Visuals**
-- Detailed player sprite (head, body, legs, weapon visible)
-- Enhanced zombie sprites (torn clothes, reaching arms, red eyes)
-- Textured terrain tiles with random details
-- Building sprites with depth and shading
-- Boss zombies are 2x larger with unique colors
-
-**UI/UX**
-- Clean status bar (health, stamina, day/night timer, resources)
-- Floating damage numbers (future)
-- Screen shake effects on hits (future)
-- Smooth animations for all actions
-- Mobile-optimized touch controls
+1. **Military Victory**: Conquer all enemy capitals
+2. **Economic Victory**: Control all major trade routes
+3. **Scientific Victory**: Unlock space colonization technology
+4. **Cultural Victory**: Spread your influence to every territory
 
 ## Controls
 
-### Desktop
-- **Arrow Keys**: Move player
-- **C**: Open crafting menu
-- **E**: Gather resources / Interact
-- **SPACE**: Attack nearby zombie
-- **ESC**: Cancel building placement / Close menus
+### Map Navigation
+- **Mouse Wheel**: Zoom in/out
+- **Click + Drag**: Pan across the map
+- **Click Tile**: Select and view tile information
 
-### Mobile/Touch
-- **Virtual Joystick**: Touch bottom-left to move
-- **ATK Button** (Red): Attack zombies
-- **E Button** (Green): Gather resources
-- **C Button** (Blue): Open crafting menu
+### UI Buttons
+- **End Turn**: Complete your turn and pass to next player
+- **Found City**: Build a new city (requires settler unit)
+- **Recruit Unit**: Train new military units (coming soon)
 
-## Installation & Setup
+## Current Implementation Status
 
-### Prerequisites
-- Node.js 18+
-- npm or yarn
+### ✅ Implemented Features (Phase 1)
+- [x] 8 unique civilizations with distinct bonuses
+- [x] Procedural world map generation with 10 terrain types
+- [x] Fog of war and exploration system
+- [x] Resource management (Food, Production, Gold, Science, Culture)
+- [x] Turn-based game flow
+- [x] City founding and territory control
+- [x] Starting units (settlers, warriors, archers, cavalry)
+- [x] Beautiful UI with civilization selection
+- [x] Map rendering with zoom and pan
+- [x] AI opponent framework (3 AI players)
+
+### 🚧 In Development (Phase 2)
+- [ ] Full city building mechanics
+- [ ] Unit movement system
+- [ ] Tactical combat with terrain modifiers
+- [ ] Technology research trees
+- [ ] Building construction and upgrades
+- [ ] Unit recruitment from cities
+
+### 📋 Planned Features (Phase 3)
+- [ ] Diplomacy system (alliances, trade, declarations)
+- [ ] Victory condition tracking and end-game
+- [ ] Advanced AI decision-making
+- [ ] Naval warfare
+- [ ] Multiplayer support
+- [ ] Random events (plagues, barbarians, golden ages)
+- [ ] Great people and wonders
+- [ ] Sound effects and music
+- [ ] Save/load system
+
+## Technical Details
+
+### Technology Stack
+- **TypeScript**: Type-safe game logic
+- **HTML5 Canvas**: 2D rendering
+- **Vite**: Fast build tool and dev server
+- **Vanilla JS**: No framework dependencies for performance
+
+### Project Structure
+```
+src/
+├── core/
+│   ├── GameState.ts      # Game state management and turn logic
+│   └── Renderer.ts        # Canvas rendering engine
+├── civilizations/
+│   └── CivilizationData.ts  # All 8 civilizations with bonuses
+├── map/
+│   └── MapGenerator.ts    # Procedural map generation
+├── ui/
+│   └── UIManager.ts       # UI updates and event handling
+├── units/                 # Unit classes (planned)
+├── combat/                # Combat system (planned)
+├── types.ts               # TypeScript type definitions
+└── main.ts                # Game initialization and loop
+```
+
+## Development
 
 ### Install Dependencies
 ```bash
@@ -193,7 +196,6 @@ npm install
 ```bash
 npm run dev
 ```
-Game runs at `http://localhost:3000`
 
 ### Build for Production
 ```bash
@@ -205,129 +207,36 @@ npm run build
 npm run preview
 ```
 
-## Development Roadmap
+## Gameplay Tips
 
-### ✅ Phase 1: Core Gameplay (COMPLETE)
-- [x] Player movement and stats
-- [x] Combat system with weapons
-- [x] Inventory management
-- [x] Resource gathering
-- [x] Crafting system with UI
-- [x] Building placement mechanics
-- [x] Zombie AI and spawning
-- [x] Day/night cycle
-- [x] Basic UI and mobile controls
+1. **Choose Your Civilization Wisely**: Each civilization excels in different victory conditions
+2. **Explore Early**: Send scouts to uncover resources and plan expansion routes
+3. **Balance Resources**: Don't neglect any resource - all are crucial
+4. **Terrain Matters**: Build cities near diverse terrain for balanced yields
+5. **Plan Your Expansion**: Space cities to maximize territory without overlap
+6. **Defend Your Capital**: Losing your capital can cripple your empire
 
-### ✅ Phase 2: Content Expansion (COMPLETE)
-- [x] Story mode with 3 acts (40 days)
-- [x] Procedural world generation (infinite)
-- [x] More zombie types (7 total)
-- [x] Boss zombies with health bars
-- [x] NPC survivor system
-- [x] Enhanced crafting recipes
+## Future Expansions
 
-### ✅ Phase 3: Polish & Features (COMPLETE)
-- [x] Save/load system
-- [x] Tutorial and onboarding
-- [x] Enhanced pixel art graphics
-- [x] Story objectives tracking
-- [x] Stat tracking system
-- [ ] Sound effects and music (planned)
-- [ ] Particle effects (planned)
-
-### 🚀 Future Enhancements
-- [ ] Endless survival mode with leaderboards
-- [ ] More weapon types (crossbows, halberds)
-- [ ] Equipment system (armor, accessories)
-- [ ] Quest system with random events
-- [ ] Multiplayer co-op (2-4 players)
-- [ ] Achievement system
-- [ ] Daily challenges
-- [ ] Seasonal events
-
-## Technical Stack
-
-- **Engine**: Phaser 3.70+
-- **Language**: TypeScript 5.3+
-- **Build Tool**: Vite 5.0+
-- **Target**: Mobile browsers (iOS/Android) + Desktop
-- **Graphics**: Procedural pixel art
-- **Storage**: LocalStorage for saves
-
-## Project Structure
-
-```
-src/
-├── config/
-│   ├── GameConfig.ts       # Constants and enums
-│   └── StoryMode.ts        # Story acts and objectives
-├── entities/
-│   ├── Player.ts           # Player with combat & inventory
-│   ├── Zombie.ts           # Zombie AI with boss support
-│   └── NPCSurvivor.ts      # NPC system
-├── items/
-│   ├── Weapon.ts           # Weapon stats and types
-│   └── Inventory.ts        # Inventory management
-├── managers/
-│   ├── ZombieSpawner.ts    # Zombie spawning logic
-│   └── BuildingManager.ts  # Building placement
-├── scenes/
-│   ├── BootScene.ts        # Asset generation
-│   └── GameScene.ts        # Main gameplay
-├── systems/
-│   ├── CraftingSystem.ts   # Recipes and crafting
-│   ├── DayNightSystem.ts   # Day/night cycle
-│   ├── ResourceManager.ts  # Resource tracking
-│   ├── SaveLoadSystem.ts   # Save/load functionality
-│   └── TutorialSystem.ts   # Tutorial flow
-├── ui/
-│   ├── GameUI.ts           # HUD and status display
-│   └── CraftingUI.ts       # Crafting menu
-├── world/
-│   ├── Building.ts         # Building entities
-│   ├── WorldObject.ts      # Harvestable objects
-│   └── WorldGenerator.ts   # Procedural generation
-└── main.ts                 # Entry point
-```
-
-## Game Stats
-
-- **Total Zombie Types**: 7 (including boss)
-- **Weapon Types**: 8
-- **Building Types**: 9
-- **Resource Types**: 6
-- **Story Acts**: 3 (40 days total)
-- **NPC Roles**: 4
-- **World**: Infinite procedural generation
-- **File Size**: ~1.5MB (mostly Phaser engine)
-
-## Performance
-
-- Target: 60 FPS on mid-range devices
-- Resolution: 720x1280 (mobile portrait)
-- Build size: ~1.5MB minified
-- Chunk loading: Dynamic (minimal memory)
-- Battery optimized: 2+ hours gameplay
-
-## Contributing
-
-This is a solo development project showcasing full-stack game development skills. Feedback and suggestions are welcome via issues!
-
-## License
-
-MIT License - Free to learn from and build upon.
+### DLC Concepts
+- Additional civilizations (Greeks, Chinese, Vikings, Incas)
+- New terrain types and natural wonders
+- Advanced diplomatic options
+- Espionage and spy networks
+- Religion and cultural mechanics
+- Modern era units and technologies
 
 ## Credits
 
-- **Developer**: Built with ❤️ using Phaser 3
-- **Inspired by**: Terraria, Don't Starve, They Are Billions, Kingdom Rush
-- **Tools**: TypeScript, Vite, Phaser 3
+Inspired by classic 4X strategy games like Civilization, Age of Empires, and Europa Universalis.
+
+**Version**: 1.0.0 (Phase 1 Complete)
+**Status**: Core gameplay implemented, combat and advanced features in development
 
 ---
 
-**Status**: Feature-Complete Alpha (v1.0.0)
-**Last Updated**: 2025-11-08
-**Play Time**: Endless (Story mode: ~2-3 hours)
-**Difficulty**: Mid-core with scaling challenge
+## License
 
-🎮 **Ready to survive the Dark Ages?**
+This project is part of a portfolio demonstration.
+
+Enjoy building your eternal empire! 🏛️⚔️🌍
