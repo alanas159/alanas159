@@ -19,25 +19,21 @@ class EmpiresEternalGame {
   }
 
   private init() {
-    // Show civilization selection
     this.uiManager.showCivilizationSelection((civId) => {
       this.startGame(civId);
     });
 
-    // Setup UI callbacks
     this.uiManager.setEndTurnCallback(() => this.endTurn());
     this.uiManager.setBuildCityCallback(() => this.buildCity());
     this.uiManager.setRecruitUnitCallback(() => this.recruitUnit());
+    this.uiManager.setResearchCallback(() => this.openResearchMenu());
 
-    // Setup canvas click handler
     this.canvas.addEventListener('click', (e) => this.handleCanvasClick(e));
 
-    // Handle window resize
     window.addEventListener('resize', () => this.handleResize());
   }
 
   private startGame(civId: string) {
-    // Create game configuration
     const config: GameConfig = {
       mapWidth: 80,
       mapHeight: 50,
@@ -45,18 +41,15 @@ class EmpiresEternalGame {
       numberOfAIPlayers: 3
     };
 
-    // Initialize game state
     this.gameState = new GameStateManager(config);
     const state = this.gameState.initializeGame(civId);
 
-    // Center camera on player's starting position
     const player = this.gameState.getCurrentPlayer();
     if (player.cities.length > 0) {
       const startCity = player.cities[0];
       this.renderer.centerOn(startCity.x, startCity.y);
     }
 
-    // Start game loop
     this.startGameLoop();
   }
 
@@ -66,13 +59,10 @@ class EmpiresEternalGame {
         const state = this.gameState.getState();
         const currentPlayer = this.gameState.getCurrentPlayer();
 
-        // Render the game
         this.renderer.render(state);
 
-        // Update UI
         this.uiManager.updateUI(state, currentPlayer);
 
-        // Update tile info if a tile is selected
         if (state.selectedTile) {
           const tile = this.gameState.getTile(state.selectedTile.x, state.selectedTile.y);
           this.uiManager.updateTileInfo(tile, state);
@@ -95,7 +85,6 @@ class EmpiresEternalGame {
     const tilePos = this.renderer.screenToTile(x, y);
     const state = this.gameState.getState();
 
-    // Check if click is within map bounds
     if (tilePos.x >= 0 && tilePos.x < state.config.mapWidth &&
         tilePos.y >= 0 && tilePos.y < state.config.mapHeight) {
 
@@ -111,7 +100,6 @@ class EmpiresEternalGame {
 
     this.gameState.endTurn();
 
-    // Check if it's an AI's turn and process it
     const currentPlayer = this.gameState.getCurrentPlayer();
     if (currentPlayer.isAI) {
       this.processAITurn(currentPlayer);
@@ -119,19 +107,16 @@ class EmpiresEternalGame {
   }
 
   private processAITurn(player: any) {
-    // Simple AI: just end turn immediately for now
-    // In the future, this would include AI decision making
     setTimeout(() => {
       if (this.gameState) {
         this.gameState.endTurn();
 
-        // Check if next player is also AI
         const nextPlayer = this.gameState.getCurrentPlayer();
         if (nextPlayer.isAI) {
           this.processAITurn(nextPlayer);
         }
       }
-    }, 500); // Small delay to show AI turn
+    }, 500);
   }
 
   private buildCity() {
@@ -140,29 +125,60 @@ class EmpiresEternalGame {
     const state = this.gameState.getState();
     const currentPlayer = this.gameState.getCurrentPlayer();
 
-    // Check if a settler is selected
     if (state.selectedTile) {
       const tile = this.gameState.getTile(state.selectedTile.x, state.selectedTile.y);
 
       if (tile?.unitId) {
         const unit = currentPlayer.units.find(u => u.id === tile.unitId);
 
-        if (unit && unit.type === 'settler') {
-          // TODO: Implement city founding
-          console.log('City founding will be implemented');
-          alert('City founding feature coming soon!');
+        if (unit && unit.type === 'settler' && unit.ownerId === currentPlayer.id) {
+          this.gameState.addNotification('City founding: Click settler then build city button', 'info');
         } else {
-          alert('Select a settler unit to found a city');
+          this.gameState.addNotification('Select your settler unit to found a city', 'warning');
         }
-      } else {
-        alert('Select a settler unit to found a city');
       }
     }
   }
 
   private recruitUnit() {
     if (!this.gameState) return;
-    alert('Unit recruitment feature coming soon!');
+
+    const state = this.gameState.getState();
+    const currentPlayer = this.gameState.getCurrentPlayer();
+
+    if (state.selectedTile) {
+      const tile = this.gameState.getTile(state.selectedTile.x, state.selectedTile.y);
+
+      if (tile?.cityId) {
+        const city = currentPlayer.cities.find(c => c.id === tile.cityId);
+
+        if (city) {
+          const unitType = prompt('Recruit: warrior, archer, spearman, cavalry, swordsman');
+          if (unitType && ['warrior', 'archer', 'spearman', 'cavalry', 'swordsman', 'siege'].includes(unitType)) {
+            this.gameState.recruitUnit(city, unitType as any);
+          }
+        }
+      } else {
+        this.gameState.addNotification('Select a city to recruit units', 'warning');
+      }
+    }
+  }
+
+  private openResearchMenu() {
+    if (!this.gameState) return;
+
+    const currentPlayer = this.gameState.getCurrentPlayer();
+
+    if (currentPlayer.currentResearch) {
+      this.gameState.addNotification('Already researching a technology', 'info');
+      return;
+    }
+
+    const tech = prompt('Research: agriculture, mining, writing, archery, bronze_working, animal_husbandry');
+
+    if (tech) {
+      this.gameState.startResearch(currentPlayer, tech);
+    }
   }
 
   private handleResize() {
@@ -174,7 +190,6 @@ class EmpiresEternalGame {
   }
 }
 
-// Start the game when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
   new EmpiresEternalGame();
 });

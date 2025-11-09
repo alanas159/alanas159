@@ -108,6 +108,41 @@ export class Renderer {
     this.ctx.fillStyle = color;
     this.ctx.fillRect(screenX, screenY, this.tileSize, this.tileSize);
 
+    // Draw river overlay
+    if (tile.hasRiver) {
+      this.ctx.fillStyle = 'rgba(74, 158, 255, 0.3)';
+      this.ctx.fillRect(screenX, screenY, this.tileSize, this.tileSize);
+
+      // River indicator line
+      if (this.tileSize >= 24) {
+        this.ctx.strokeStyle = '#4a9eff';
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.moveTo(screenX + 2, screenY + this.tileSize / 2);
+        this.ctx.lineTo(screenX + this.tileSize - 2, screenY + this.tileSize / 2);
+        this.ctx.stroke();
+      }
+    }
+
+    // Draw strategic resource indicator
+    if (tile.strategicResource && this.tileSize >= 20) {
+      const resourceIcons: Record<string, string> = {
+        iron: '⚒',
+        horses: '🐴',
+        wheat: '🌾',
+        fish: '🐟',
+        stone: '🪨',
+        luxury: '💎'
+      };
+
+      const icon = resourceIcons[tile.strategicResource] || '●';
+      this.ctx.fillStyle = '#ffd700';
+      this.ctx.font = `${Math.floor(this.tileSize * 0.4)}px Arial`;
+      this.ctx.textAlign = 'right';
+      this.ctx.textBaseline = 'top';
+      this.ctx.fillText(icon, screenX + this.tileSize - 2, screenY + 2);
+    }
+
     // Fog of war overlay if not currently visible
     if (!tile.visible) {
       this.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
@@ -218,8 +253,16 @@ export class Renderer {
       this.ctx.font = `bold ${Math.floor(this.tileSize * 0.4)}px Arial`;
       this.ctx.textAlign = 'center';
       this.ctx.textBaseline = 'middle';
-      const icon = unit.type === 'settler' ? 'S' : unit.type === 'warrior' ? 'W' :
-                   unit.type === 'archer' ? 'A' : unit.type === 'cavalry' ? 'C' : 'X';
+      const iconMap: Record<string, string> = {
+        settler: 'S',
+        warrior: 'W',
+        spearman: 'P',
+        archer: 'A',
+        swordsman: 'D',
+        cavalry: 'C',
+        siege: 'G'
+      };
+      const icon = iconMap[unit.type] || 'X';
       this.ctx.fillText(icon, screenX + this.tileSize / 2, screenY + this.tileSize / 2);
     }
 
@@ -243,7 +286,9 @@ export class Renderer {
     const colors: Record<string, string> = {
       settler: '#4169e1',
       warrior: '#dc143c',
+      spearman: '#ff6347',
       archer: '#228b22',
+      swordsman: '#8b0000',
       cavalry: '#daa520',
       siege: '#8b4513'
     };
