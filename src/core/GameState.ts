@@ -9,11 +9,20 @@ import { getUnitData, canRecruitUnit, getUnitCostWithBonuses } from './UnitData'
 import { AIManager } from './AIManager';
 import { VictoryManager } from './VictoryManager';
 import { SaveLoadManager } from './SaveLoadManager';
+import { DiplomacyManager } from './DiplomacyManager';
+import { RandomEventsManager, RANDOM_EVENTS } from './RandomEvents';
+import { GreatPeopleManager } from '../data/GreatPeopleData';
+import { WorldWondersManager } from '../data/WorldWondersData';
+import { soundManager } from './SoundManager';
 
 export class GameStateManager {
   private state: GameState;
   private mapGenerator: MapGenerator;
   private aiManager: AIManager;
+  public diplomacyManager: DiplomacyManager;
+  public randomEventsManager: RandomEventsManager;
+  public greatPeopleManager: GreatPeopleManager;
+  public worldWondersManager: WorldWondersManager;
 
   constructor(config: GameConfig) {
     this.mapGenerator = new MapGenerator(config);
@@ -35,6 +44,12 @@ export class GameStateManager {
 
     // Initialize AI Manager
     this.aiManager = new AIManager(this);
+
+    // Initialize Phase 3 managers
+    this.diplomacyManager = new DiplomacyManager();
+    this.randomEventsManager = new RandomEventsManager();
+    this.greatPeopleManager = new GreatPeopleManager();
+    this.worldWondersManager = new WorldWondersManager();
   }
 
   // Initialize the game with a player's chosen civilization
@@ -59,6 +74,11 @@ export class GameStateManager {
 
     // Place starting units and cities for all players
     this.placeStartingUnits();
+
+    // Initialize diplomacy between all players
+    this.diplomacyManager.initializeDiplomacy(this.state.players);
+
+    soundManager.click();
 
     return this.state;
   }
@@ -346,6 +366,43 @@ export class GameStateManager {
         this.processTerritoryOccupation(player);
       });
 
+      // Process Phase 3 systems
+      this.diplomacyManager.processTrades(this.state.turn, this.state.players);
+      this.randomEventsManager.processEvents(this.state.turn, this.state.players, this.state);
+
+      // Process random events notifications
+      RANDOM_EVENTS.forEach(event => {
+        const triggered = this.state.eventsHistory?.find(
+          e => e.turn === this.state.turn && e.eventId === event.id
+        );
+        if (triggered) {
+          soundManager.eventTriggered();
+          this.addNotification(`${event.icon} ${event.name}: ${event.description}`, 'info');
+        }
+      });
+
+      // Add Great People points based on buildings and wonders
+      this.state.players.forEach(player => {
+        player.cities.forEach(city => {
+          // +1 scientist point per Library
+          if (city.buildings.includes('library')) {
+            this.greatPeopleManager.addPoints(player.id, 'scientist', 1);
+          }
+          // +1 engineer point per Workshop
+          if (city.buildings.includes('workshop')) {
+            this.greatPeopleManager.addPoints(player.id, 'engineer', 1);
+          }
+          // +1 artist point per Temple
+          if (city.buildings.includes('temple')) {
+            this.greatPeopleManager.addPoints(player.id, 'artist', 1);
+          }
+          // +1 merchant point per Market
+          if (city.buildings.includes('market')) {
+            this.greatPeopleManager.addPoints(player.id, 'merchant', 1);
+          }
+        });
+      });
+
       // Check victory conditions every turn
       const victoryResult = VictoryManager.checkVictory(this.state);
       if (victoryResult) {
@@ -458,6 +515,7 @@ export class GameStateManager {
       if (tech && player.currentResearch.progress >= tech.cost) {
         // Research complete!
         player.technologies.push(tech.id);
+        soundManager.techResearched();
         this.addNotification(`Researched ${tech.name}!`, 'success');
         player.currentResearch = undefined;
 
@@ -887,6 +945,7 @@ export class GameStateManager {
     player.units.push(unit);
     this.state.map[spawnTile.y][spawnTile.x].unitId = unit.id;
 
+    soundManager.unitRecruited();
     this.addNotification(`${city.name} recruited ${unitData.name}!`, 'success');
     return true;
   }
