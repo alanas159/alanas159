@@ -17,8 +17,13 @@ export class CombatSystem {
     state: GameState
   ): CombatResult {
     // Get terrain modifiers
-    const defenseBonus = this.getTerrainDefenseBonus(defenderTile);
-    const attackBonus = this.getTerrainAttackBonus(state.map[attacker.y][attacker.x]);
+    let defenseBonus = this.getTerrainDefenseBonus(defenderTile, defender);
+    const attackBonus = this.getTerrainAttackBonus(state.map[attacker.y][attacker.x], attacker);
+
+    // Check if defender is in a city (city defense bonus)
+    if (defenderTile.cityId) {
+      defenseBonus += 0.50; // +50% defense in cities
+    }
 
     // Calculate effective stats
     const attackerStrength = attacker.attack * (1 + attackBonus) * (attacker.health / 100);
@@ -61,7 +66,7 @@ export class CombatSystem {
     };
   }
 
-  private static getTerrainDefenseBonus(tile: Tile): number {
+  private static getTerrainDefenseBonus(tile: Tile, defender: Unit): number {
     let bonus = 0;
 
     switch (tile.terrain) {
@@ -74,6 +79,10 @@ export class CombatSystem {
       case 'forest':
       case 'jungle':
         bonus += 0.15; // +15% defense
+        // Archers get extra defense in forests
+        if (defender.type === 'archer') {
+          bonus += 0.20; // Additional +20% for archers
+        }
         break;
     }
 
@@ -85,12 +94,30 @@ export class CombatSystem {
     return bonus;
   }
 
-  private static getTerrainAttackBonus(tile: Tile): number {
+  private static getTerrainAttackBonus(tile: Tile, attacker: Unit): number {
     let bonus = 0;
 
     switch (tile.terrain) {
       case 'plains':
+      case 'grassland':
         bonus += 0.10; // +10% attack for open terrain
+        // Cavalry gets extra bonus on open terrain
+        if (attacker.type === 'cavalry') {
+          bonus += 0.15; // Additional +15% for cavalry
+        }
+        break;
+      case 'forest':
+      case 'jungle':
+        // Cavalry penalty in dense terrain
+        if (attacker.type === 'cavalry') {
+          bonus -= 0.20; // -20% for cavalry in woods
+        }
+        break;
+      case 'hills':
+        // Siege units get bonus from high ground
+        if (attacker.type === 'siege') {
+          bonus += 0.20; // +20% for siege on hills
+        }
         break;
     }
 

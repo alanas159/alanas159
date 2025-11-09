@@ -11,6 +11,10 @@ export class TechnologyTreeUI {
   private treeContainer: HTMLElement;
   private currentPlayer: Player | null = null;
   private onResearch: ((techId: string) => void) | null = null;
+  private filters = {
+    era: 'all' as 'all' | 'antiquity' | 'medieval' | 'modern',
+    status: 'all' as 'all' | 'available' | 'researched' | 'locked'
+  };
 
   constructor() {
     this.modal = document.getElementById('tech-tree-modal')!;
@@ -43,6 +47,10 @@ export class TechnologyTreeUI {
     this.currentPlayer = player;
     this.onResearch = onResearch;
 
+    // Reset filters
+    this.filters.era = 'all';
+    this.filters.status = 'all';
+
     this.renderTechTree();
     this.modal.classList.remove('hidden');
     soundManager.click();
@@ -56,11 +64,17 @@ export class TechnologyTreeUI {
 
     this.treeContainer.innerHTML = '';
 
+    // Add filter controls
+    this.treeContainer.appendChild(this.createFilterControls());
+
     // Group technologies by era and branch
     const eras: ('antiquity' | 'medieval' | 'modern')[] = ['antiquity', 'medieval', 'modern'];
     const branches: string[] = ['military', 'economy', 'infrastructure', 'naval', 'science_culture'];
 
-    eras.forEach(era => {
+    // Apply era filter
+    const filteredEras = this.filters.era === 'all' ? eras : [this.filters.era];
+
+    filteredEras.forEach(era => {
       const eraSection = document.createElement('div');
       eraSection.className = 'tech-era-section';
       eraSection.innerHTML = `<h3 class="tech-era-title">${era.toUpperCase()}</h3>`;
@@ -72,6 +86,13 @@ export class TechnologyTreeUI {
         const techs = TECHNOLOGIES.filter(t => t.era === era && t.branch === branch);
         if (techs.length === 0) return;
 
+        // Apply status filter
+        const filteredTechs = this.filters.status === 'all'
+          ? techs
+          : techs.filter(tech => this.matchesStatusFilter(tech));
+
+        if (filteredTechs.length === 0) return;
+
         const branchDiv = document.createElement('div');
         branchDiv.className = 'tech-branch';
         branchDiv.innerHTML = `<div class="tech-branch-label">${this.getBranchIcon(branch)} ${branch.replace('_', ' ').toUpperCase()}</div>`;
@@ -79,7 +100,7 @@ export class TechnologyTreeUI {
         const techsDiv = document.createElement('div');
         techsDiv.className = 'tech-cards';
 
-        techs.forEach(tech => {
+        filteredTechs.forEach(tech => {
           const card = this.createTechCard(tech);
           techsDiv.appendChild(card);
         });
@@ -91,6 +112,104 @@ export class TechnologyTreeUI {
       eraSection.appendChild(branchesContainer);
       this.treeContainer.appendChild(eraSection);
     });
+  }
+
+  /**
+   * Create filter controls
+   */
+  private createFilterControls(): HTMLElement {
+    const container = document.createElement('div');
+    container.style.cssText = `
+      display: flex;
+      gap: 16px;
+      margin-bottom: 20px;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      align-items: center;
+    `;
+
+    // Era filter
+    const eraLabel = document.createElement('span');
+    eraLabel.textContent = 'Era:';
+    eraLabel.style.cssText = 'color: #d4af37; font-weight: bold; margin-right: 8px;';
+
+    const eraSelect = document.createElement('select');
+    eraSelect.style.cssText = `
+      background: rgba(0, 0, 0, 0.3);
+      color: white;
+      border: 1px solid #555;
+      border-radius: 4px;
+      padding: 6px 12px;
+      font-size: 14px;
+      cursor: pointer;
+    `;
+    eraSelect.innerHTML = `
+      <option value="all">All Eras</option>
+      <option value="antiquity">Antiquity</option>
+      <option value="medieval">Medieval</option>
+      <option value="modern">Modern</option>
+    `;
+    eraSelect.onchange = () => {
+      this.filters.era = eraSelect.value as any;
+      this.renderTechTree();
+      soundManager.click();
+    };
+
+    // Status filter
+    const statusLabel = document.createElement('span');
+    statusLabel.textContent = 'Status:';
+    statusLabel.style.cssText = 'color: #d4af37; font-weight: bold; margin-left: 16px; margin-right: 8px;';
+
+    const statusSelect = document.createElement('select');
+    statusSelect.style.cssText = `
+      background: rgba(0, 0, 0, 0.3);
+      color: white;
+      border: 1px solid #555;
+      border-radius: 4px;
+      padding: 6px 12px;
+      font-size: 14px;
+      cursor: pointer;
+    `;
+    statusSelect.innerHTML = `
+      <option value="all">All</option>
+      <option value="available">Available</option>
+      <option value="researched">Researched</option>
+      <option value="locked">Locked</option>
+    `;
+    statusSelect.onchange = () => {
+      this.filters.status = statusSelect.value as any;
+      this.renderTechTree();
+      soundManager.click();
+    };
+
+    container.appendChild(eraLabel);
+    container.appendChild(eraSelect);
+    container.appendChild(statusLabel);
+    container.appendChild(statusSelect);
+
+    return container;
+  }
+
+  /**
+   * Check if tech matches current status filter
+   */
+  private matchesStatusFilter(tech: Technology): boolean {
+    if (!this.currentPlayer) return false;
+
+    const isResearched = this.currentPlayer.technologies.includes(tech.id);
+    const canResearch = this.canResearch(tech);
+
+    switch (this.filters.status) {
+      case 'available':
+        return canResearch && !isResearched;
+      case 'researched':
+        return isResearched;
+      case 'locked':
+        return !canResearch && !isResearched;
+      default:
+        return true;
+    }
   }
 
   /**
