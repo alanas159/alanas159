@@ -102,6 +102,42 @@ export const UNITS: Record<UnitType, UnitData> = {
       attack: 20,
       defense: 5
     }
+  },
+  galley: {
+    type: 'galley',
+    name: 'Galley',
+    cost: { production: 35 },
+    requiredTech: 'sailing',
+    stats: {
+      health: 100,
+      movement: 3,
+      attack: 5,
+      defense: 8
+    }
+  },
+  trireme: {
+    type: 'trireme',
+    name: 'Trireme',
+    cost: { production: 45, gold: 10 },
+    requiredTech: 'shipbuilding',
+    stats: {
+      health: 100,
+      movement: 4,
+      attack: 10,
+      defense: 12
+    }
+  },
+  caravel: {
+    type: 'caravel',
+    name: 'Caravel',
+    cost: { production: 60, gold: 20 },
+    requiredTech: 'navigation',
+    stats: {
+      health: 100,
+      movement: 5,
+      attack: 15,
+      defense: 15
+    }
   }
 };
 

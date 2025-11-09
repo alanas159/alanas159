@@ -11,7 +11,7 @@ export type VictoryType = 'military' | 'economic' | 'scientific' | 'cultural';
 
 export type EraType = 'antiquity' | 'medieval' | 'modern';
 
-export type UnitType = 'settler' | 'warrior' | 'archer' | 'cavalry' | 'siege' | 'spearman' | 'swordsman';
+export type UnitType = 'settler' | 'warrior' | 'archer' | 'cavalry' | 'siege' | 'spearman' | 'swordsman' | 'galley' | 'trireme' | 'caravel';
 
 export type BuildingType = 'barracks' | 'granary' | 'library' | 'market' | 'walls' | 'temple' | 'workshop' | 'university';
 
@@ -128,6 +128,16 @@ export interface Player {
     techId: string;
     progress: number;
   };
+  // Phase 3: Diplomacy
+  diplomaticRelations?: Map<string, {
+    relation: 'war' | 'neutral' | 'friendly' | 'allied';
+    trustLevel: number;
+  }>;
+  // Phase 3: Great People
+  greatPeople?: string[]; // IDs of great people owned
+  greatPersonPoints?: Record<string, number>; // Points per type
+  // Phase 3: Victory tracking
+  score?: number;
 }
 
 export interface GameConfig {
@@ -148,4 +158,21 @@ export interface GameState {
   selectedUnit: Unit | null;
   selectedCity: City | null;
   notifications: Array<{message: string; type: 'info' | 'success' | 'warning' | 'error'; timestamp: number}>;
+  // Phase 3: World Wonders
+  builtWonders?: Array<{
+    wonderId: string;
+    ownerId: string;
+    cityId: string;
+    turnCompleted: number;
+  }>;
+  // Phase 3: Random Events
+  eventsHistory?: Array<{
+    eventId: string;
+    turn: number;
+    affectedPlayers: string[];
+  }>;
+  // Phase 3: Victory
+  winner?: string;
+  victoryType?: 'domination' | 'science' | 'culture' | 'diplomacy' | 'time';
+  gameEnded?: boolean;
 }

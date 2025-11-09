@@ -170,7 +170,40 @@ export class UIManager {
       this.techProgressEl.style.width = '0%';
     }
 
+    // Update button states
+    this.updateButtonStates(state, currentPlayer);
+
     this.updateNotifications(state);
+  }
+
+  /**
+   * Update button enabled/disabled states based on game state
+   */
+  private updateButtonStates(state: GameState, currentPlayer: Player) {
+    // Build City button - enabled if settler is selected
+    let hasSettlerSelected = false;
+    if (state.selectedTile) {
+      const tile = state.map[state.selectedTile.y][state.selectedTile.x];
+      if (tile?.unitId) {
+        const unit = currentPlayer.units.find(u => u.id === tile.unitId);
+        hasSettlerSelected = unit?.type === 'settler' && unit.ownerId === currentPlayer.id;
+      }
+    }
+    this.buildCityBtn.disabled = !hasSettlerSelected;
+
+    // Recruit Unit button - enabled if city is selected
+    let hasCitySelected = false;
+    if (state.selectedTile) {
+      const tile = state.map[state.selectedTile.y][state.selectedTile.x];
+      if (tile?.cityId) {
+        const city = currentPlayer.cities.find(c => c.id === tile.cityId);
+        hasCitySelected = !!city;
+      }
+    }
+    this.recruitUnitBtn.disabled = !hasCitySelected;
+
+    // Research button - enabled if not currently researching
+    this.researchBtn.disabled = !!currentPlayer.currentResearch;
   }
 
   private updateNotifications(state: GameState) {
