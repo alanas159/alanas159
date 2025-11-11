@@ -332,17 +332,22 @@ class EmpiresEternalGame {
           const otherPlayer = state.players.find(p => p.id === targetId);
           if (otherPlayer) {
             this.uiManager.showTradeNegotiation(currentPlayer, otherPlayer, (offer: any) => {
-              // TODO: AI should accept/reject/counter the offer
-              // For now, just accept all trades
-              this.gameState!.addNotification(`Trade proposed to ${otherPlayer.civilizationId}`, 'info');
-              // Apply trade immediately (simplified)
-              if (offer.offering.gold) {
-                currentPlayer.resources.gold -= offer.offering.gold;
-                otherPlayer.resources.gold += offer.offering.gold;
-              }
-              if (offer.requesting.gold) {
-                otherPlayer.resources.gold -= offer.requesting.gold;
-                currentPlayer.resources.gold += offer.requesting.gold;
+              // Evaluate AI response to trade offer
+              const aiResponse = this.evaluateTradeOffer(offer, currentPlayer, otherPlayer);
+
+              if (aiResponse === 'accept') {
+                // Apply the trade
+                this.applyTrade(offer, currentPlayer, otherPlayer);
+                this.gameState!.addNotification(
+                  `${otherPlayer.civilizationId} accepted your trade offer!`,
+                  'success'
+                );
+              } else {
+                // Reject the trade
+                this.gameState!.addNotification(
+                  `${otherPlayer.civilizationId} rejected your trade offer. Offer more or request less.`,
+                  'warning'
+                );
               }
             });
           }
@@ -453,6 +458,87 @@ class EmpiresEternalGame {
       const isValid = this.checkCityFoundingValid(tilePos.x, tilePos.y);
       this.renderer.setCityFoundingPreview(tilePos.x, tilePos.y, isValid);
     }
+  }
+
+  /**
+   * Evaluate trade offer and decide AI response
+   * Returns: 'accept', 'reject', or 'counter'
+   */
+  private evaluateTradeOffer(offer: any, fromPlayer: any, toPlayer: any): 'accept' | 'reject' {
+    // Calculate value of what's being offered
+    let offerValue = 0;
+    if (offer.offering.gold) offerValue += offer.offering.gold;
+    if (offer.offering.goldPerTurn) offerValue += offer.offering.goldPerTurn * 20; // 20 turns worth
+    if (offer.offering.resources) {
+      offerValue += (offer.offering.resources.food || 0) * 10;
+      offerValue += (offer.offering.resources.production || 0) * 15;
+      offerValue += (offer.offering.resources.science || 0) * 20;
+      offerValue += (offer.offering.resources.culture || 0) * 15;
+    }
+    if (offer.offering.technologies) {
+      offerValue += offer.offering.technologies.length * 200; // Technologies are very valuable
+    }
+
+    // Calculate value of what's being requested
+    let requestValue = 0;
+    if (offer.requesting.gold) requestValue += offer.requesting.gold;
+    if (offer.requesting.goldPerTurn) requestValue += offer.requesting.goldPerTurn * 20;
+    if (offer.requesting.resources) {
+      requestValue += (offer.requesting.resources.food || 0) * 10;
+      requestValue += (offer.requesting.resources.production || 0) * 15;
+      requestValue += (offer.requesting.resources.science || 0) * 20;
+      requestValue += (offer.requesting.resources.culture || 0) * 15;
+    }
+    if (offer.requesting.technologies) {
+      requestValue += offer.requesting.technologies.length * 200;
+    }
+
+    // Check if AI can afford what's being requested
+    const canAfford =
+      (!offer.requesting.gold || toPlayer.resources.gold >= offer.requesting.gold) &&
+      (!offer.requesting.goldPerTurn || toPlayer.resources.gold >= offer.requesting.goldPerTurn * 5);
+
+    if (!canAfford) {
+      return 'reject';
+    }
+
+    // AI accepts if offered value is >= 80% of requested value (somewhat generous)
+    const fairValue = requestValue * 0.8;
+    return offerValue >= fairValue ? 'accept' : 'reject';
+  }
+
+  /**
+   * Apply trade agreement between players
+   */
+  private applyTrade(offer: any, fromPlayer: any, toPlayer: any) {
+    // Apply gold transfers
+    if (offer.offering.gold) {
+      fromPlayer.resources.gold -= offer.offering.gold;
+      toPlayer.resources.gold += offer.offering.gold;
+    }
+    if (offer.requesting.gold) {
+      toPlayer.resources.gold -= offer.requesting.gold;
+      fromPlayer.resources.gold += offer.requesting.gold;
+    }
+
+    // Apply technology transfers
+    if (offer.offering.technologies) {
+      offer.offering.technologies.forEach((techId: string) => {
+        if (!toPlayer.technologies.includes(techId)) {
+          toPlayer.technologies.push(techId);
+        }
+      });
+    }
+    if (offer.requesting.technologies) {
+      offer.requesting.technologies.forEach((techId: string) => {
+        if (!fromPlayer.technologies.includes(techId)) {
+          fromPlayer.technologies.push(techId);
+        }
+      });
+    }
+
+    // TODO: Add per-turn deals tracking (gold/resources per turn)
+    // Would require a trade agreements system
   }
 
   private handleResize() {

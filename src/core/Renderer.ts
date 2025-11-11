@@ -1,5 +1,6 @@
 import { GameState, Tile, TerrainType, Unit, City } from '../types';
 import { Pathfinding } from './Pathfinding';
+import { CombatSystem } from './CombatSystem';
 
 interface UnitAnimation {
   unitId: string;
@@ -10,6 +11,15 @@ interface UnitAnimation {
   startTime: number;
   duration: number;
   type: 'move' | 'attack';
+}
+
+interface DamageNumber {
+  x: number;
+  y: number;
+  damage: number;
+  startTime: number;
+  duration: number;
+  color: string;
 }
 
 export class Renderer {
@@ -24,6 +34,7 @@ export class Renderer {
   private showMovementRange: boolean = true; // Toggle for movement range display
   private activeAnimations: UnitAnimation[] = [];
   private attackFlashes: Map<string, number> = new Map(); // unitId -> timestamp
+  private damageNumbers: DamageNumber[] = [];
   private cityFoundingMode: boolean = false;
   private cityFoundingPreview: {x: number; y: number; valid: boolean} | null = null;
 
@@ -88,6 +99,11 @@ export class Renderer {
       this.renderMovementRange(state.selectedUnit, state);
     }
 
+    // Render attack range for selected unit
+    if (state.selectedUnit && this.showMovementRange && !this.cityFoundingMode && !state.selectedUnit.hasActed) {
+      this.renderAttackRange(state.selectedUnit, state);
+    }
+
     // Render city founding preview
     if (this.cityFoundingMode && this.cityFoundingPreview) {
       this.renderCityFoundingPreview(this.cityFoundingPreview, state);
@@ -103,6 +119,9 @@ export class Renderer {
     if (state.selectedTile) {
       this.renderSelection(state.selectedTile.x, state.selectedTile.y);
     }
+
+    // Render damage numbers (on top of everything)
+    this.renderDamageNumbers();
   }
 
   private renderMap(state: GameState) {
@@ -473,44 +492,61 @@ export class Renderer {
     this.ctx.lineWidth = isFlashing ? 3 : 2;
     this.ctx.stroke();
 
-    // Draw unit icon/emoji
+    // Draw pixelated unit sprite
     if (this.tileSize >= 20) {
+      this.drawUnitSprite(unit.type, screenX + this.tileSize / 2, screenY + this.tileSize / 2, this.tileSize);
+    }
+
+    // Enhanced health bar (always show)
+    const healthPercent = unit.health / unit.maxHealth;
+    const barWidth = this.tileSize * 0.8;
+    const barHeight = Math.max(4, this.tileSize * 0.12);
+    const barX = screenX + this.tileSize * 0.1;
+    const barY = screenY + this.tileSize - barHeight - 2;
+
+    // Black border for visibility
+    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+    this.ctx.fillRect(barX - 1, barY - 1, barWidth + 2, barHeight + 2);
+
+    // Background (red)
+    this.ctx.fillStyle = '#ff0000';
+    this.ctx.fillRect(barX, barY, barWidth, barHeight);
+
+    // Health bar (color-coded)
+    let healthColor = '#00ff00'; // Green
+    if (healthPercent < 0.3) {
+      healthColor = '#ff0000'; // Red
+    } else if (healthPercent < 0.6) {
+      healthColor = '#ffaa00'; // Orange
+    } else if (healthPercent < 0.8) {
+      healthColor = '#ffff00'; // Yellow
+    }
+
+    this.ctx.fillStyle = healthColor;
+    const healthWidth = healthPercent * barWidth;
+    this.ctx.fillRect(barX, barY, healthWidth, barHeight);
+
+    // Health percentage text (if zoomed in enough)
+    if (this.tileSize >= 32) {
       this.ctx.fillStyle = '#fff';
-      const fontSize = Math.floor(this.tileSize * 0.5);
-      this.ctx.font = `${fontSize}px Arial`;
+      this.ctx.font = `bold ${Math.floor(this.tileSize * 0.18)}px Arial`;
       this.ctx.textAlign = 'center';
       this.ctx.textBaseline = 'middle';
 
-      // Better icons for each unit type
-      const iconMap: Record<string, string> = {
-        settler: '👷',      // Builder/settler
-        warrior: '⚔️',      // Sword for basic warrior
-        spearman: '🗡️',    // Spear
-        archer: '🏹',       // Bow and arrow
-        swordsman: '⚔️',    // Sword
-        cavalry: '🐴',      // Horse for cavalry
-        siege: '🎯',        // Target for siege
-        galley: '⛵',       // Boat
-        trireme: '🚢',      // Ship
-        caravel: '⛵'       // Sailing ship
-      };
-      const icon = iconMap[unit.type] || '👤';
-      this.ctx.fillText(icon, screenX + this.tileSize / 2, screenY + this.tileSize / 2);
-    }
+      // Shadow for visibility
+      this.ctx.strokeStyle = '#000';
+      this.ctx.lineWidth = 2;
+      this.ctx.strokeText(
+        `${Math.ceil(healthPercent * 100)}%`,
+        barX + barWidth / 2,
+        barY + barHeight / 2
+      );
 
-    // Health bar
-    if (unit.health < unit.maxHealth) {
-      const barWidth = this.tileSize * 0.8;
-      const barHeight = 3;
-      const barX = screenX + this.tileSize * 0.1;
-      const barY = screenY + this.tileSize * 0.9;
-
-      this.ctx.fillStyle = '#ff0000';
-      this.ctx.fillRect(barX, barY, barWidth, barHeight);
-
-      this.ctx.fillStyle = '#00ff00';
-      const healthWidth = (unit.health / unit.maxHealth) * barWidth;
-      this.ctx.fillRect(barX, barY, healthWidth, barHeight);
+      this.ctx.fillText(
+        `${Math.ceil(healthPercent * 100)}%`,
+        barX + barWidth / 2,
+        barY + barHeight / 2
+      );
     }
 
     // Movement points indicator
@@ -573,6 +609,162 @@ export class Renderer {
     return colors[type] || '#808080';
   }
 
+  /**
+   * Draw pixelated character sprite for unit
+   */
+  private drawUnitSprite(unitType: string, centerX: number, centerY: number, tileSize: number) {
+    // Sprite patterns: 0 = transparent, 1 = primary color, 2 = secondary color, 3 = accent
+    const sprites: Record<string, number[][]> = {
+      settler: [
+        [0,0,3,3,3,3,0,0],
+        [0,3,3,3,3,3,3,0],
+        [0,0,1,1,1,1,0,0],
+        [0,0,1,1,1,1,0,0],
+        [0,0,2,1,1,2,0,0],
+        [0,0,0,1,1,0,0,0],
+        [0,0,2,1,1,2,0,0],
+        [0,0,2,0,0,2,0,0]
+      ],
+      warrior: [
+        [0,0,0,2,2,0,0,0],
+        [0,0,2,1,1,2,0,0],
+        [0,0,1,1,1,1,0,0],
+        [0,3,3,1,1,3,3,0],
+        [0,0,3,1,1,3,0,0],
+        [0,0,0,1,1,0,0,0],
+        [0,0,2,1,1,2,0,0],
+        [0,0,2,0,0,2,0,0]
+      ],
+      spearman: [
+        [0,0,0,0,3,0,0,0],
+        [0,0,0,3,3,0,0,0],
+        [0,0,3,1,1,2,0,0],
+        [0,0,1,1,1,1,0,0],
+        [0,2,2,1,1,2,2,0],
+        [0,0,0,1,1,0,0,0],
+        [0,0,2,1,1,2,0,0],
+        [0,0,2,0,0,2,0,0]
+      ],
+      archer: [
+        [0,0,0,2,0,0,0,0],
+        [0,0,2,1,3,3,0,0],
+        [0,0,1,1,1,3,0,0],
+        [0,0,1,1,1,1,0,0],
+        [0,0,3,1,1,0,0,0],
+        [0,0,0,1,1,0,0,0],
+        [0,0,2,1,1,2,0,0],
+        [0,0,2,0,0,2,0,0]
+      ],
+      swordsman: [
+        [0,0,0,3,3,0,0,0],
+        [0,0,2,1,1,2,0,0],
+        [0,2,1,1,1,1,2,0],
+        [3,3,2,1,1,2,3,3],
+        [0,0,2,1,1,2,0,0],
+        [0,0,0,1,1,0,0,0],
+        [0,0,2,1,1,2,0,0],
+        [0,0,2,0,0,2,0,0]
+      ],
+      cavalry: [
+        [0,0,2,2,0,0,0,0],
+        [0,2,1,1,2,0,0,0],
+        [0,1,1,1,1,2,0,0],
+        [0,1,1,1,1,2,2,0],
+        [2,2,2,2,2,1,1,2],
+        [2,1,1,1,2,2,2,2],
+        [0,2,2,2,0,0,0,0],
+        [0,0,0,0,0,0,0,0]
+      ],
+      siege: [
+        [0,0,2,3,3,2,0,0],
+        [0,2,2,3,3,2,2,0],
+        [0,2,1,1,1,1,2,0],
+        [2,1,1,1,1,1,1,2],
+        [2,1,1,1,1,1,1,2],
+        [2,2,2,2,2,2,2,2],
+        [0,2,0,0,0,0,2,0],
+        [0,2,0,0,0,0,2,0]
+      ],
+      galley: [
+        [0,0,0,3,0,0,0,0],
+        [0,0,3,3,3,0,0,0],
+        [0,0,0,3,0,0,0,0],
+        [0,2,2,2,2,2,0,0],
+        [2,1,1,1,1,1,2,0],
+        [2,1,1,1,1,1,2,0],
+        [0,2,2,2,2,2,0,0],
+        [0,0,0,0,0,0,0,0]
+      ],
+      trireme: [
+        [0,0,3,3,3,0,0,0],
+        [0,3,3,3,3,3,0,0],
+        [0,0,3,3,3,0,0,0],
+        [2,2,2,2,2,2,2,0],
+        [2,1,1,1,1,1,1,2],
+        [2,1,1,1,1,1,1,2],
+        [0,2,2,2,2,2,2,0],
+        [0,0,0,0,0,0,0,0]
+      ],
+      caravel: [
+        [0,0,0,3,3,0,0,0],
+        [0,0,3,3,3,3,0,0],
+        [0,3,3,3,3,3,3,0],
+        [0,0,0,3,3,0,0,0],
+        [0,2,2,2,2,2,2,0],
+        [2,1,1,1,1,1,1,2],
+        [2,1,1,1,1,1,1,2],
+        [0,2,2,2,2,2,2,0]
+      ]
+    };
+
+    const sprite = sprites[unitType] || sprites.warrior;
+    const spriteSize = sprite.length;
+
+    // Calculate pixel size based on tile size
+    const pixelSize = Math.max(1, Math.floor(tileSize * 0.7 / spriteSize));
+    const totalSize = pixelSize * spriteSize;
+
+    // Starting position (centered)
+    const startX = centerX - totalSize / 2;
+    const startY = centerY - totalSize / 2;
+
+    // Color palettes for each unit type
+    const colorPalettes: Record<string, {primary: string, secondary: string, accent: string}> = {
+      settler: { primary: '#4169e1', secondary: '#ffd700', accent: '#ff8c00' },
+      warrior: { primary: '#dc143c', secondary: '#8b0000', accent: '#c0c0c0' },
+      spearman: { primary: '#ff6347', secondary: '#8b4513', accent: '#dcdcdc' },
+      archer: { primary: '#228b22', secondary: '#8b4513', accent: '#f5f5dc' },
+      swordsman: { primary: '#8b0000', secondary: '#696969', accent: '#c0c0c0' },
+      cavalry: { primary: '#daa520', secondary: '#8b4513', accent: '#654321' },
+      siege: { primary: '#8b4513', secondary: '#696969', accent: '#ff4500' },
+      galley: { primary: '#8b4513', secondary: '#654321', accent: '#f5f5dc' },
+      trireme: { primary: '#8b4513', secondary: '#654321', accent: '#f5f5dc' },
+      caravel: { primary: '#8b4513', secondary: '#654321', accent: '#f5f5dc' }
+    };
+
+    const palette = colorPalettes[unitType] || colorPalettes.warrior;
+
+    // Draw each pixel
+    for (let y = 0; y < spriteSize; y++) {
+      for (let x = 0; x < spriteSize; x++) {
+        const pixelValue = sprite[y][x];
+        if (pixelValue === 0) continue;
+
+        let color = palette.primary;
+        if (pixelValue === 2) color = palette.secondary;
+        else if (pixelValue === 3) color = palette.accent;
+
+        this.ctx.fillStyle = color;
+        this.ctx.fillRect(
+          startX + x * pixelSize,
+          startY + y * pixelSize,
+          pixelSize,
+          pixelSize
+        );
+      }
+    }
+  }
+
   private renderSelection(x: number, y: number) {
     const screenX = x * this.tileSize + this.offsetX;
     const screenY = y * this.tileSize + this.offsetY;
@@ -613,6 +805,70 @@ export class Renderer {
       this.ctx.lineWidth = 2;
       this.ctx.strokeRect(screenX, screenY, this.tileSize, this.tileSize);
     });
+  }
+
+  /**
+   * Render attack range for selected unit
+   */
+  private renderAttackRange(unit: Unit, state: GameState) {
+    // Get enemies in range
+    const enemiesInRange = CombatSystem.getEnemiesInRange(unit, state);
+
+    // Calculate attack range based on unit type
+    const range = (unit.type === 'archer' || unit.type === 'siege') ? 2 : 1;
+
+    // Show attack range tiles (all tiles within attack range)
+    const startX = Math.max(0, unit.x - range);
+    const endX = Math.min(state.map[0].length - 1, unit.x + range);
+    const startY = Math.max(0, unit.y - range);
+    const endY = Math.min(state.map.length - 1, unit.y + range);
+
+    for (let y = startY; y <= endY; y++) {
+      for (let x = startX; x <= endX; x++) {
+        const distance = Math.abs(x - unit.x) + Math.abs(y - unit.y);
+
+        // Skip center tile and out-of-range tiles
+        if ((x === unit.x && y === unit.y) || distance > range || distance === 0) continue;
+
+        // For ranged units, skip adjacent tiles
+        if ((unit.type === 'archer' || unit.type === 'siege') && distance < 1) continue;
+
+        const screenX = x * this.tileSize + this.offsetX;
+        const screenY = y * this.tileSize + this.offsetY;
+
+        // Check if there's an enemy on this tile
+        const hasEnemy = enemiesInRange.some(enemy => enemy.x === x && enemy.y === y);
+
+        if (hasEnemy) {
+          // Red overlay for attackable enemies
+          this.ctx.fillStyle = 'rgba(255, 50, 50, 0.4)';
+          this.ctx.fillRect(screenX, screenY, this.tileSize, this.tileSize);
+
+          // Strong red border
+          this.ctx.strokeStyle = 'rgba(255, 0, 0, 0.9)';
+          this.ctx.lineWidth = 3;
+          this.ctx.strokeRect(screenX, screenY, this.tileSize, this.tileSize);
+
+          // Attack indicator icon
+          if (this.tileSize >= 24) {
+            this.ctx.fillStyle = '#ff0000';
+            this.ctx.font = `bold ${Math.floor(this.tileSize * 0.3)}px Arial`;
+            this.ctx.textAlign = 'right';
+            this.ctx.textBaseline = 'top';
+            this.ctx.fillText('⚔', screenX + this.tileSize - 4, screenY + 4);
+          }
+        } else {
+          // Light red overlay for potential attack range
+          this.ctx.fillStyle = 'rgba(255, 100, 100, 0.15)';
+          this.ctx.fillRect(screenX, screenY, this.tileSize, this.tileSize);
+
+          // Thin red border
+          this.ctx.strokeStyle = 'rgba(255, 100, 100, 0.5)';
+          this.ctx.lineWidth = 1;
+          this.ctx.strokeRect(screenX, screenY, this.tileSize, this.tileSize);
+        }
+      }
+    }
   }
 
   // Toggle movement range display
@@ -665,6 +921,70 @@ export class Renderer {
     const y = animation.startY + (animation.endY - animation.startY) * easeProgress;
 
     return {x, y};
+  }
+
+  /**
+   * Show floating damage number at position
+   */
+  showDamageNumber(x: number, y: number, damage: number, isAttacker: boolean = false) {
+    this.damageNumbers.push({
+      x,
+      y,
+      damage,
+      startTime: Date.now(),
+      duration: 1500, // 1.5 seconds
+      color: isAttacker ? '#ff6b6b' : '#ffd700'
+    });
+
+    // Auto-cleanup after duration
+    setTimeout(() => {
+      this.damageNumbers = this.damageNumbers.filter(d =>
+        Date.now() - d.startTime < d.duration
+      );
+    }, 1500);
+  }
+
+  /**
+   * Render floating damage numbers
+   */
+  private renderDamageNumbers() {
+    const now = Date.now();
+
+    this.damageNumbers.forEach(dmg => {
+      const elapsed = now - dmg.startTime;
+      const progress = Math.min(elapsed / dmg.duration, 1);
+
+      // Calculate position (float upward)
+      const screenX = dmg.x * this.tileSize + this.offsetX + this.tileSize / 2;
+      const screenY = dmg.y * this.tileSize + this.offsetY + this.tileSize / 4;
+      const floatY = screenY - (progress * 30); // Float up 30px
+
+      // Calculate opacity (fade out)
+      const opacity = 1 - progress;
+
+      // Draw damage number
+      this.ctx.save();
+      this.ctx.globalAlpha = opacity;
+      this.ctx.font = `bold ${Math.floor(this.tileSize * 0.6)}px Arial`;
+      this.ctx.textAlign = 'center';
+      this.ctx.textBaseline = 'middle';
+
+      // Shadow/outline for visibility
+      this.ctx.strokeStyle = '#000';
+      this.ctx.lineWidth = 3;
+      this.ctx.strokeText(`-${dmg.damage}`, screenX, floatY);
+
+      // Actual text
+      this.ctx.fillStyle = dmg.color;
+      this.ctx.fillText(`-${dmg.damage}`, screenX, floatY);
+
+      this.ctx.restore();
+    });
+
+    // Clean up expired damage numbers
+    this.damageNumbers = this.damageNumbers.filter(d =>
+      now - d.startTime < d.duration
+    );
   }
 
   // Check if unit has active animations

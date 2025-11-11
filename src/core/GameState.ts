@@ -1125,6 +1125,18 @@ export class GameStateManager {
     const defenderTile = this.state.map[defender.y][defender.x];
     const result = CombatSystem.resolveCombat(attacker, defender, defenderTile, this.state);
 
+    // Show damage numbers if renderer is available
+    if (this.renderer) {
+      // Show damage dealt to defender
+      if (result.defenderDamage > 0) {
+        this.renderer.showDamageNumber(defender.x, defender.y, result.defenderDamage, false);
+      }
+      // Show damage dealt to attacker (counter-attack)
+      if (result.attackerDamage > 0) {
+        this.renderer.showDamageNumber(attacker.x, attacker.y, result.attackerDamage, true);
+      }
+    }
+
     this.addNotification(result.message, 'info');
 
     // Remove destroyed units
