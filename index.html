@@ -1980,6 +1980,206 @@
     .world-wonders-content::-webkit-scrollbar-thumb:hover {
       background: linear-gradient(180deg, #ffd700 0%, #d4af37 100%);
     }
+
+    /* Unit Recruitment UI */
+    .units-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+      padding: 20px 0;
+    }
+
+    .unit-card {
+      background: linear-gradient(145deg, rgba(20, 20, 30, 0.95), rgba(10, 10, 20, 0.95));
+      border: 2px solid #d4af37;
+      border-radius: 12px;
+      padding: 16px;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(212, 175, 55, 0.2);
+    }
+
+    .unit-card.available:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 25px rgba(212, 175, 55, 0.4);
+      border-color: #ffd700;
+    }
+
+    .unit-card.locked {
+      opacity: 0.5;
+      border-color: #666;
+      filter: grayscale(0.7);
+    }
+
+    .unit-card.unaffordable {
+      border-color: #ff6b6b;
+      opacity: 0.8;
+    }
+
+    .unit-card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+    }
+
+    .unit-icon {
+      font-size: 36px;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+    }
+
+    .unit-name {
+      font-size: 18px;
+      color: #ffd700;
+      font-weight: 600;
+    }
+
+    .unit-card-body {
+      margin-bottom: 12px;
+    }
+
+    .unit-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .stat {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 6px;
+      font-size: 13px;
+      color: #e8d5b7;
+    }
+
+    .stat-icon {
+      font-size: 16px;
+    }
+
+    .unit-costs {
+      display: flex;
+      gap: 12px;
+      margin: 12px 0;
+    }
+
+    .cost-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      background: rgba(212, 175, 55, 0.15);
+      border: 1px solid rgba(212, 175, 55, 0.3);
+      border-radius: 8px;
+      flex: 1;
+    }
+
+    .cost-icon {
+      font-size: 18px;
+    }
+
+    .cost-value {
+      font-size: 16px;
+      font-weight: 600;
+      color: #4ade80;
+    }
+
+    .cost-value.insufficient {
+      color: #ff6b6b;
+    }
+
+    .requirement-warning,
+    .affordability-warning {
+      padding: 8px 12px;
+      background: rgba(255, 107, 107, 0.15);
+      border: 1px solid rgba(255, 107, 107, 0.3);
+      border-radius: 6px;
+      font-size: 12px;
+      color: #ff6b6b;
+      margin-top: 8px;
+      text-align: center;
+    }
+
+    .requirement-warning {
+      background: rgba(100, 100, 100, 0.15);
+      border-color: rgba(150, 150, 150, 0.3);
+      color: #aaa;
+    }
+
+    .unit-card-footer {
+      margin-top: 12px;
+    }
+
+    .recruit-btn {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 10px rgba(74, 222, 128, 0.3);
+    }
+
+    .recruit-btn:hover:not(.disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 15px rgba(74, 222, 128, 0.5);
+      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+    }
+
+    .recruit-btn.disabled {
+      background: linear-gradient(135deg, #555 0%, #444 100%);
+      cursor: not-allowed;
+      box-shadow: none;
+      opacity: 0.6;
+    }
+
+    .resource-display {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 12px;
+      margin-bottom: 20px;
+    }
+
+    .resource-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 16px 32px;
+      background: linear-gradient(145deg, rgba(20, 20, 30, 0.8), rgba(10, 10, 20, 0.8));
+      border: 2px solid rgba(212, 175, 55, 0.3);
+      border-radius: 10px;
+      min-width: 120px;
+    }
+
+    .resource-icon {
+      font-size: 28px;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+    }
+
+    .resource-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: #ffd700;
+    }
+
+    .resource-label {
+      font-size: 12px;
+      color: #aaa;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
   </style>
 </head>
 <body>

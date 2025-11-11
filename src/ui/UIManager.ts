@@ -9,6 +9,7 @@ import { GreatPeopleUI } from './GreatPeopleUI';
 import { WorldWondersUI } from './WorldWondersUI';
 import { CitySelectionUI } from './CitySelectionUI';
 import { TradeNegotiationUI } from './TradeNegotiationUI';
+import { UnitRecruitmentUI } from './UnitRecruitmentUI';
 import { GreatPerson, GreatPersonType } from '../data/GreatPeopleData';
 import { WorldWondersManager } from '../data/WorldWondersData';
 
@@ -21,6 +22,7 @@ export class UIManager {
   private worldWondersUI: WorldWondersUI;
   private citySelectionUI: CitySelectionUI;
   private tradeNegotiationUI: TradeNegotiationUI;
+  private unitRecruitmentUI: UnitRecruitmentUI;
   private showTutorialBtn: HTMLButtonElement;
   private civSelectionDiv: HTMLElement;
   private civGridDiv: HTMLElement;
@@ -108,6 +110,7 @@ export class UIManager {
     this.worldWondersUI = new WorldWondersUI();
     this.citySelectionUI = new CitySelectionUI();
     this.tradeNegotiationUI = new TradeNegotiationUI();
+    this.unitRecruitmentUI = new UnitRecruitmentUI();
 
     this.setupCivilizationSelection();
     this.setupTutorialButton();
@@ -432,5 +435,13 @@ export class UIManager {
     onOffer: (offer: any) => void
   ) {
     this.tradeNegotiationUI.show(player, otherPlayer, onOffer);
+  }
+
+  showUnitRecruitment(
+    city: City,
+    player: Player,
+    onRecruit: (unitType: UnitType) => void
+  ) {
+    this.unitRecruitmentUI.show(city, player, onRecruit);
   }
 }

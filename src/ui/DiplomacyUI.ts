@@ -103,14 +103,15 @@ export class DiplomacyUI {
     const buttons: string[] = [];
 
     if (relation === 'war') {
-      buttons.push(`<button class="diplomacy-btn diplomacy-btn-peace" data-action="peace" data-target="${targetId}">🕊️ Propose Peace</button>`);
+      buttons.push(`<button class="diplomacy-btn diplomacy-btn-peace" data-action="make_peace" data-target="${targetId}">🕊️ Propose Peace</button>`);
+      buttons.push(`<button class="diplomacy-btn diplomacy-btn-trade" data-action="propose_trade" data-target="${targetId}">💰 Propose Trade</button>`);
     } else if (relation === 'allied') {
       buttons.push(`<button class="diplomacy-btn diplomacy-btn-danger" data-action="break_alliance" data-target="${targetId}">💔 Break Alliance</button>`);
-      buttons.push(`<button class="diplomacy-btn diplomacy-btn-trade" data-action="trade" data-target="${targetId}">💰 Propose Trade</button>`);
+      buttons.push(`<button class="diplomacy-btn diplomacy-btn-trade" data-action="propose_trade" data-target="${targetId}">💰 Propose Trade</button>`);
     } else if (relation === 'neutral' || relation === 'friendly') {
-      buttons.push(`<button class="diplomacy-btn diplomacy-btn-war" data-action="war" data-target="${targetId}">⚔️ Declare War</button>`);
-      buttons.push(`<button class="diplomacy-btn diplomacy-btn-alliance" data-action="alliance" data-target="${targetId}">🤝 Propose Alliance</button>`);
-      buttons.push(`<button class="diplomacy-btn diplomacy-btn-trade" data-action="trade" data-target="${targetId}">💰 Propose Trade</button>`);
+      buttons.push(`<button class="diplomacy-btn diplomacy-btn-war" data-action="declare_war" data-target="${targetId}">⚔️ Declare War</button>`);
+      buttons.push(`<button class="diplomacy-btn diplomacy-btn-alliance" data-action="form_alliance" data-target="${targetId}">🤝 Propose Alliance</button>`);
+      buttons.push(`<button class="diplomacy-btn diplomacy-btn-trade" data-action="propose_trade" data-target="${targetId}">💰 Propose Trade</button>`);
     }
 
     // Add event listeners after rendering
@@ -120,10 +121,11 @@ export class DiplomacyUI {
           btn.addEventListener('click', (e) => {
             const action = (e.target as HTMLElement).getAttribute('data-action');
             if (action && this.onAction) {
-              if (action === 'trade') {
-                this.showTradeDialog(targetId);
-              } else {
-                this.onAction(action, targetId);
+              // All actions are now handled in main.ts
+              this.onAction(action, targetId);
+              // Close modal after action for better UX
+              if (action !== 'propose_trade') {
+                this.hide();
               }
             }
           });
@@ -132,45 +134,6 @@ export class DiplomacyUI {
     }, 0);
 
     return buttons.join('');
-  }
-
-  /**
-   * Show trade dialog
-   */
-  private showTradeDialog(targetId: string) {
-    const tradeType = prompt('Trade type: "once" for one-time trade, "ongoing" for X turns trade');
-
-    if (!tradeType || !['once', 'ongoing'].includes(tradeType)) return;
-
-    const offerGold = parseInt(prompt('Offer gold (0 for none):') || '0');
-    const requestGold = parseInt(prompt('Request gold (0 for none):') || '0');
-
-    let offerGoldPerTurn = 0;
-    let requestGoldPerTurn = 0;
-    let turns = 0;
-
-    if (tradeType === 'ongoing') {
-      offerGoldPerTurn = parseInt(prompt('Offer gold per turn (0 for none):') || '0');
-      requestGoldPerTurn = parseInt(prompt('Request gold per turn (0 for none):') || '0');
-      turns = parseInt(prompt('For how many turns?') || '10');
-    }
-
-    const tradeData = {
-      type: tradeType === 'once' ? 'one_time' : 'ongoing',
-      offering: {
-        gold: offerGold > 0 ? offerGold : undefined,
-        goldPerTurn: offerGoldPerTurn > 0 ? offerGoldPerTurn : undefined
-      },
-      requesting: {
-        gold: requestGold > 0 ? requestGold : undefined,
-        goldPerTurn: requestGoldPerTurn > 0 ? requestGoldPerTurn : undefined
-      },
-      turnsRemaining: tradeType === 'ongoing' ? turns : undefined
-    };
-
-    if (this.onAction) {
-      this.onAction('trade', targetId, tradeData);
-    }
   }
 
   /**
