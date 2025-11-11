@@ -806,6 +806,27 @@ export class GameStateManager {
       if (enemyUnit && this.state.selectedUnit &&
           this.state.selectedUnit.ownerId === currentPlayer.id &&
           !this.state.selectedUnit.hasActed) {
+
+        // Check if unit can attack
+        if (!CombatSystem.canAttack(this.state.selectedUnit, enemyUnit, this.state)) {
+          // Calculate distance
+          const distance = Math.abs(this.state.selectedUnit.x - enemyUnit.x) +
+                          Math.abs(this.state.selectedUnit.y - enemyUnit.y);
+
+          const isRanged = this.state.selectedUnit.type === 'archer' || this.state.selectedUnit.type === 'siege';
+
+          if (distance === 0) {
+            this.addNotification('Cannot attack unit on same tile!', 'warning');
+          } else if (isRanged && distance > 2) {
+            this.addNotification('Enemy too far! Ranged units can attack up to 2 tiles away.', 'warning');
+          } else if (isRanged && distance < 1) {
+            this.addNotification('Enemy too close! Ranged units cannot attack adjacent units.', 'warning');
+          } else if (!isRanged && distance > 1) {
+            this.addNotification('Enemy too far! Move adjacent to attack.', 'warning');
+          }
+          return;
+        }
+
         // Try to attack the enemy unit
         const defenderOwner = this.state.players.find(p => p.id === enemyUnit.ownerId);
 
@@ -816,7 +837,7 @@ export class GameStateManager {
 
           if (relation !== 'war') {
             diplomacyManager.declareWar(currentPlayer.id, defenderOwner.id);
-            this.addNotification(`War declared on ${defenderOwner.civilizationId}!`, 'warning');
+            this.addNotification(`⚔️ War declared on ${defenderOwner.civilizationId}!`, 'warning');
           }
         }
 

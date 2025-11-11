@@ -1,7 +1,7 @@
 import { GameStateManager } from './core/GameState';
 import { Renderer } from './core/Renderer';
 import { UIManager } from './ui/UIManager';
-import { GameConfig } from './types';
+import { GameConfig, City, Player } from './types';
 
 class EmpiresEternalGame {
   private gameState: GameStateManager | null = null;
@@ -254,18 +254,43 @@ class EmpiresEternalGame {
       }
     }
 
+    // If no city selected but player has cities, show city picker
     if (!selectedCity) {
-      this.gameState.addNotification('Select a city to recruit units', 'warning');
-      return;
+      if (currentPlayer.cities.length === 0) {
+        this.gameState.addNotification('You need a city to recruit units', 'warning');
+        return;
+      } else if (currentPlayer.cities.length === 1) {
+        // Auto-select the only city
+        selectedCity = currentPlayer.cities[0];
+      } else {
+        // Show city picker
+        this.uiManager.showCitySelection(
+          currentPlayer.cities,
+          'Select City for Recruitment',
+          'Choose which city will recruit the unit',
+          (city) => {
+            if (city) {
+              this.showRecruitmentUIForCity(city, currentPlayer);
+            }
+          }
+        );
+        return;
+      }
     }
 
+    this.showRecruitmentUIForCity(selectedCity, currentPlayer);
+  }
+
+  private showRecruitmentUIForCity(city: City, player: Player) {
     // Show unit recruitment UI
-    this.uiManager.showUnitRecruitment(selectedCity, currentPlayer, (unitType) => {
-      const success = this.gameState!.recruitUnit(selectedCity!, unitType);
+    this.uiManager.showUnitRecruitment(city, player, (unitType) => {
+      const success = this.gameState!.recruitUnit(city, unitType);
 
       // If recruitment failed, show requirements
       if (!success) {
-        this.uiManager.showRecruitUnitRequirements(currentPlayer, selectedCity!, unitType);
+        this.uiManager.showRecruitUnitRequirements(player, city, unitType);
+      } else {
+        this.gameState!.addNotification(`${city.name} is recruiting a new unit!`, 'success');
       }
     });
   }
