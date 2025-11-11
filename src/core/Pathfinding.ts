@@ -135,13 +135,21 @@ export class Pathfinding {
   }
 
   private static isPassable(tile: Tile, unit: Unit, state: GameState): boolean {
-    // Mountains are impassable (except for special units)
+    // Check if unit is naval
+    const isNaval = unit.type === 'galley' || unit.type === 'trireme' || unit.type === 'caravel';
+
+    // Mountains are impassable for all units
     if (tile.terrain === 'mountains') {
       return false;
     }
 
-    // Ocean is impassable for land units (for now)
+    // Ocean is only passable for naval units
     if (tile.terrain === 'ocean') {
+      return isNaval;
+    }
+
+    // Land terrain is only passable for land units (naval units can't go on land)
+    if (isNaval && tile.terrain !== 'ocean') {
       return false;
     }
 
