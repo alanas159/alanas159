@@ -783,6 +783,43 @@ export class GameStateManager {
 
   selectTile(x: number, y: number) {
     this.state.selectedTile = { x, y };
+
+    // Also set selected unit if there's a unit on this tile
+    const tile = this.getTile(x, y);
+    if (tile?.unitId) {
+      // Find the unit that belongs to the current player
+      const currentPlayer = this.getCurrentPlayer();
+      const unit = currentPlayer.units.find(u => u.id === tile.unitId);
+      if (unit) {
+        this.state.selectedUnit = unit;
+      } else {
+        this.state.selectedUnit = null;
+      }
+    } else {
+      // Check if we should move selected unit to this tile
+      if (this.state.selectedUnit) {
+        const currentPlayer = this.getCurrentPlayer();
+        if (this.state.selectedUnit.ownerId === currentPlayer.id &&
+            !this.state.selectedUnit.hasActed) {
+          // Try to move the unit
+          this.moveUnit(this.state.selectedUnit, x, y);
+        }
+      }
+      this.state.selectedUnit = null;
+    }
+
+    // Set selected city if there's a city on this tile
+    if (tile?.cityId) {
+      const currentPlayer = this.getCurrentPlayer();
+      const city = currentPlayer.cities.find(c => c.id === tile.cityId);
+      if (city) {
+        this.state.selectedCity = city;
+      } else {
+        this.state.selectedCity = null;
+      }
+    } else {
+      this.state.selectedCity = null;
+    }
   }
 
   getTile(x: number, y: number): Tile | null {
