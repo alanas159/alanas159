@@ -279,17 +279,31 @@ export class Renderer {
 
     switch (terrain) {
       case 'ocean':
-        // Enhanced wave lines with depth
-        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-        this.ctx.lineWidth = 1.5;
+        // Animated wave lines with depth (time-based)
+        const time = Date.now() / 1000;
+        const waveOffset = Math.sin(time * 2 + screenX * 0.01) * 3;
+
+        // Multiple wave layers for depth
         for (let i = 0; i < 3; i++) {
+          const alpha = 0.1 + (i * 0.05);
+          this.ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+          this.ctx.lineWidth = 1.5;
+
           this.ctx.beginPath();
-          this.ctx.moveTo(screenX, screenY + (i + 1) * (size / 4));
+          this.ctx.moveTo(screenX, screenY + (i + 1) * (size / 4) + waveOffset);
           this.ctx.quadraticCurveTo(
-            screenX + size / 2, screenY + (i + 1) * (size / 4) + 2,
-            screenX + size, screenY + (i + 1) * (size / 4)
+            screenX + size / 2, screenY + (i + 1) * (size / 4) + 2 + waveOffset,
+            screenX + size, screenY + (i + 1) * (size / 4) + waveOffset
           );
           this.ctx.stroke();
+        }
+
+        // Add foam sparkles (subtle white dots)
+        if (Math.random() < 0.1) {
+          this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+          const sparkleX = screenX + Math.random() * size;
+          const sparkleY = screenY + Math.random() * size;
+          this.ctx.fillRect(sparkleX, sparkleY, 2, 2);
         }
         break;
 
@@ -418,6 +432,13 @@ export class Renderer {
     // City base size scales with population
     const popFactor = Math.min(city.population / 20, 1.5); // Max 1.5x size
     const citySize = this.tileSize * (0.6 + popFactor * 0.2);
+
+    // Add shadow for depth
+    this.ctx.save();
+    this.ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+    this.ctx.shadowBlur = 8;
+    this.ctx.shadowOffsetX = 3;
+    this.ctx.shadowOffsetY = 3;
 
     if (city.isCapital) {
       // Capital: Elaborate design with central tower and walls
@@ -552,6 +573,8 @@ export class Renderer {
       }
     }
 
+    this.ctx.restore(); // Restore context (remove shadow)
+
     // Black border for definition
     this.ctx.strokeStyle = '#000';
     this.ctx.lineWidth = 2;
@@ -590,12 +613,13 @@ export class Renderer {
   private renderUnits(state: GameState) {
     state.players.forEach(player => {
       player.units.forEach(unit => {
-        this.renderUnit(unit, player.civilizationId);
+        const isSelected = state.selectedUnit?.id === unit.id;
+        this.renderUnit(unit, player.civilizationId, isSelected);
       });
     });
   }
 
-  private renderUnit(unit: Unit, civId: string) {
+  private renderUnit(unit: Unit, civId: string, isSelected: boolean = false) {
     // Get interpolated position if unit is animating
     const pos = this.getUnitRenderPosition(unit);
     const screenX = pos.x * this.tileSize + this.offsetX;
@@ -604,6 +628,42 @@ export class Renderer {
     // Check for attack flash
     const attackFlash = this.attackFlashes.get(unit.id);
     const isFlashing = attackFlash && (Date.now() - attackFlash) < 500;
+
+    // Selection glow effect (pulsing)
+    if (isSelected) {
+      const time = Date.now() / 1000;
+      const pulse = 0.5 + Math.sin(time * 3) * 0.2; // Pulsing between 0.3 and 0.7
+
+      // Outer glow
+      const gradient = this.ctx.createRadialGradient(
+        screenX + this.tileSize / 2,
+        screenY + this.tileSize / 2,
+        this.tileSize * 0.3,
+        screenX + this.tileSize / 2,
+        screenY + this.tileSize / 2,
+        this.tileSize * 0.5
+      );
+      gradient.addColorStop(0, `rgba(0, 255, 255, ${pulse * 0.3})`);
+      gradient.addColorStop(1, `rgba(0, 255, 255, 0)`);
+
+      this.ctx.fillStyle = gradient;
+      this.ctx.beginPath();
+      this.ctx.arc(
+        screenX + this.tileSize / 2,
+        screenY + this.tileSize / 2,
+        this.tileSize * 0.5,
+        0,
+        Math.PI * 2
+      );
+      this.ctx.fill();
+    }
+
+    // Drop shadow for depth
+    this.ctx.save();
+    this.ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+    this.ctx.shadowBlur = 6;
+    this.ctx.shadowOffsetX = 2;
+    this.ctx.shadowOffsetY = 2;
 
     // Draw unit as a circle
     this.ctx.fillStyle = this.getUnitColor(unit.type);
@@ -616,6 +676,8 @@ export class Renderer {
       Math.PI * 2
     );
     this.ctx.fill();
+
+    this.ctx.restore();
 
     // Attack flash effect
     if (isFlashing) {
@@ -634,8 +696,8 @@ export class Renderer {
     }
 
     // Draw unit border
-    this.ctx.strokeStyle = isFlashing ? '#ff0000' : '#000';
-    this.ctx.lineWidth = isFlashing ? 3 : 2;
+    this.ctx.strokeStyle = isFlashing ? '#ff0000' : isSelected ? '#00ffff' : '#000';
+    this.ctx.lineWidth = isFlashing || isSelected ? 3 : 2;
     this.ctx.stroke();
 
     // Draw pixelated unit sprite
