@@ -260,58 +260,123 @@ export class Renderer {
 
     switch (terrain) {
       case 'ocean':
-        // Wave lines
-        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-        this.ctx.lineWidth = 1;
-        this.ctx.beginPath();
-        this.ctx.moveTo(screenX, screenY + size * 0.3);
-        this.ctx.lineTo(screenX + size, screenY + size * 0.3);
-        this.ctx.moveTo(screenX, screenY + size * 0.6);
-        this.ctx.lineTo(screenX + size, screenY + size * 0.6);
-        this.ctx.stroke();
-        break;
-
-      case 'forest':
-      case 'jungle':
-        // Tree dots
-        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
-        for (let i = 0; i < 3; i++) {
-          const x = screenX + (i + 1) * (size / 4);
-          const y = screenY + ((i % 2) + 1) * (size / 3);
-          this.ctx.fillRect(x - 1, y - 1, 2, 2);
-        }
-        break;
-
-      case 'desert':
-        // Sand ripples
-        this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.08)';
-        this.ctx.lineWidth = 1;
+        // Enhanced wave lines with depth
+        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+        this.ctx.lineWidth = 1.5;
         for (let i = 0; i < 3; i++) {
           this.ctx.beginPath();
-          this.ctx.arc(screenX + size / 2, screenY + (i + 1) * (size / 4), size / 4, 0, Math.PI);
+          this.ctx.moveTo(screenX, screenY + (i + 1) * (size / 4));
+          this.ctx.quadraticCurveTo(
+            screenX + size / 2, screenY + (i + 1) * (size / 4) + 2,
+            screenX + size, screenY + (i + 1) * (size / 4)
+          );
           this.ctx.stroke();
         }
         break;
 
+      case 'forest':
+      case 'jungle':
+        // Tree silhouettes with variety
+        this.ctx.fillStyle = terrain === 'jungle' ? 'rgba(0, 50, 0, 0.3)' : 'rgba(0, 0, 0, 0.25)';
+        for (let i = 0; i < 4; i++) {
+          const x = screenX + ((i % 2) + 0.5) * (size / 2);
+          const y = screenY + (Math.floor(i / 2) + 0.5) * (size / 2);
+          const treeSize = size * 0.15;
+
+          // Tree crown (circle)
+          this.ctx.beginPath();
+          this.ctx.arc(x, y - treeSize / 2, treeSize, 0, Math.PI * 2);
+          this.ctx.fill();
+
+          // Tree trunk (small rect)
+          this.ctx.fillRect(x - treeSize / 6, y, treeSize / 3, treeSize / 2);
+        }
+        break;
+
+      case 'desert':
+        // Sand dunes with shadows
+        this.ctx.strokeStyle = 'rgba(139, 90, 43, 0.15)';
+        this.ctx.lineWidth = 1.5;
+        for (let i = 0; i < 2; i++) {
+          this.ctx.beginPath();
+          this.ctx.arc(screenX + size / 2, screenY + (i + 0.5) * (size / 2), size / 3, 0, Math.PI);
+          this.ctx.stroke();
+        }
+        // Add sand dots
+        this.ctx.fillStyle = 'rgba(210, 180, 140, 0.3)';
+        for (let i = 0; i < 5; i++) {
+          const x = screenX + Math.random() * size;
+          const y = screenY + Math.random() * size;
+          this.ctx.fillRect(x, y, 1.5, 1.5);
+        }
+        break;
+
       case 'mountains':
-      case 'hills':
-        // Rock patterns
-        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+        // Multiple mountain peaks
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+        // Left peak
         this.ctx.beginPath();
-        this.ctx.moveTo(screenX + size * 0.5, screenY + size * 0.2);
-        this.ctx.lineTo(screenX + size * 0.3, screenY + size * 0.7);
-        this.ctx.lineTo(screenX + size * 0.7, screenY + size * 0.7);
+        this.ctx.moveTo(screenX + size * 0.3, screenY + size * 0.3);
+        this.ctx.lineTo(screenX + size * 0.15, screenY + size * 0.75);
+        this.ctx.lineTo(screenX + size * 0.45, screenY + size * 0.75);
+        this.ctx.closePath();
+        this.ctx.fill();
+
+        // Right peak (higher)
+        this.ctx.beginPath();
+        this.ctx.moveTo(screenX + size * 0.65, screenY + size * 0.2);
+        this.ctx.lineTo(screenX + size * 0.45, screenY + size * 0.75);
+        this.ctx.lineTo(screenX + size * 0.85, screenY + size * 0.75);
         this.ctx.closePath();
         this.ctx.fill();
         break;
 
-      case 'snow':
-        // Snowflake dots
-        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-        for (let i = 0; i < 4; i++) {
+      case 'hills':
+        // Rolling hills
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.12)';
+        this.ctx.beginPath();
+        this.ctx.arc(screenX + size * 0.3, screenY + size * 0.7, size * 0.25, Math.PI, 0);
+        this.ctx.arc(screenX + size * 0.7, screenY + size * 0.7, size * 0.25, Math.PI, 0);
+        this.ctx.fill();
+        break;
+
+      case 'grassland':
+      case 'plains':
+        // Grass tufts
+        this.ctx.strokeStyle = terrain === 'grassland' ? 'rgba(0, 100, 0, 0.2)' : 'rgba(139, 119, 0, 0.15)';
+        this.ctx.lineWidth = 1;
+        for (let i = 0; i < 6; i++) {
           const x = screenX + Math.random() * size;
           const y = screenY + Math.random() * size;
-          this.ctx.fillRect(x, y, 1, 1);
+          this.ctx.beginPath();
+          this.ctx.moveTo(x, y);
+          this.ctx.lineTo(x, y - size * 0.1);
+          this.ctx.stroke();
+        }
+        break;
+
+      case 'snow':
+        // Snowflakes with variety
+        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+        for (let i = 0; i < 6; i++) {
+          const x = screenX + Math.random() * size;
+          const y = screenY + Math.random() * size;
+          const flakeSize = Math.random() * 2 + 1;
+          this.ctx.fillRect(x, y, flakeSize, flakeSize);
+        }
+        break;
+
+      case 'tundra':
+        // Frozen ground cracks
+        this.ctx.strokeStyle = 'rgba(150, 170, 180, 0.3)';
+        this.ctx.lineWidth = 1;
+        for (let i = 0; i < 3; i++) {
+          const startX = screenX + Math.random() * size;
+          const startY = screenY + Math.random() * size;
+          this.ctx.beginPath();
+          this.ctx.moveTo(startX, startY);
+          this.ctx.lineTo(startX + size * 0.2, startY + Math.random() * size * 0.2);
+          this.ctx.stroke();
         }
         break;
     }
@@ -408,22 +473,28 @@ export class Renderer {
     this.ctx.lineWidth = isFlashing ? 3 : 2;
     this.ctx.stroke();
 
-    // Draw unit icon/letter
+    // Draw unit icon/emoji
     if (this.tileSize >= 20) {
       this.ctx.fillStyle = '#fff';
-      this.ctx.font = `bold ${Math.floor(this.tileSize * 0.4)}px Arial`;
+      const fontSize = Math.floor(this.tileSize * 0.5);
+      this.ctx.font = `${fontSize}px Arial`;
       this.ctx.textAlign = 'center';
       this.ctx.textBaseline = 'middle';
+
+      // Better icons for each unit type
       const iconMap: Record<string, string> = {
-        settler: 'S',
-        warrior: 'W',
-        spearman: 'P',
-        archer: 'A',
-        swordsman: 'D',
-        cavalry: 'C',
-        siege: 'G'
+        settler: '👷',      // Builder/settler
+        warrior: '⚔️',      // Sword for basic warrior
+        spearman: '🗡️',    // Spear
+        archer: '🏹',       // Bow and arrow
+        swordsman: '⚔️',    // Sword
+        cavalry: '🐴',      // Horse for cavalry
+        siege: '🎯',        // Target for siege
+        galley: '⛵',       // Boat
+        trireme: '🚢',      // Ship
+        caravel: '⛵'       // Sailing ship
       };
-      const icon = iconMap[unit.type] || 'X';
+      const icon = iconMap[unit.type] || '👤';
       this.ctx.fillText(icon, screenX + this.tileSize / 2, screenY + this.tileSize / 2);
     }
 
