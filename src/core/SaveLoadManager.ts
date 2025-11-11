@@ -1,27 +1,39 @@
 import { GameState } from '../types';
 
-/**
- * SaveLoadManager - Handles game save/load functionality
- */
 export class SaveLoadManager {
-  private static SAVE_KEY_PREFIX = 'empires_eternal_save_';
-  private static AUTO_SAVE_KEY = 'empires_eternal_autosave';
-  private static MAX_MANUAL_SAVES = 10;
+  private static readonly SAVE_KEY = 'empires_eternal_save';
+  private static readonly MAX_SAVES = 5;
 
   /**
-   * Save game to localStorage
+   * Save current game state
    */
-  static saveGame(state: GameState, saveName: string): boolean {
+  static saveGame(state: GameState, saveName: string = 'autosave'): boolean {
     try {
       const saveData = {
-        state,
+        name: saveName,
         timestamp: Date.now(),
-        version: '1.0.0'
+        turn: state.turn,
+        state: this.serializeState(state)
       };
 
-      const saveKey = this.SAVE_KEY_PREFIX + saveName;
-      localStorage.setItem(saveKey, JSON.stringify(saveData));
+      // Get existing saves
+      const saves = this.getAllSaves();
 
+      // Add or update save
+      const existingIndex = saves.findIndex(s => s.name === saveName);
+      if (existingIndex >= 0) {
+        saves[existingIndex] = saveData;
+      } else {
+        saves.push(saveData);
+      }
+
+      // Keep only last MAX_SAVES
+      if (saves.length > this.MAX_SAVES) {
+        saves.sort((a, b) => b.timestamp - a.timestamp);
+        saves.splice(this.MAX_SAVES);
+      }
+
+      localStorage.setItem(this.SAVE_KEY, JSON.stringify(saves));
       return true;
     } catch (error) {
       console.error('Failed to save game:', error);
@@ -30,38 +42,18 @@ export class SaveLoadManager {
   }
 
   /**
-   * Auto-save game
-   */
-  static autoSave(state: GameState): boolean {
-    try {
-      const saveData = {
-        state,
-        timestamp: Date.now(),
-        version: '1.0.0'
-      };
-
-      localStorage.setItem(this.AUTO_SAVE_KEY, JSON.stringify(saveData));
-      return true;
-    } catch (error) {
-      console.error('Auto-save failed:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Load game from localStorage
+   * Load game state
    */
   static loadGame(saveName: string): GameState | null {
     try {
-      const saveKey = this.SAVE_KEY_PREFIX + saveName;
-      const savedData = localStorage.getItem(saveKey);
+      const saves = this.getAllSaves();
+      const save = saves.find(s => s.name === saveName);
 
-      if (!savedData) {
+      if (!save) {
         return null;
       }
 
-      const parsed = JSON.parse(savedData);
-      return parsed.state;
+      return this.deserializeState(save.state);
     } catch (error) {
       console.error('Failed to load game:', error);
       return null;
@@ -69,51 +61,15 @@ export class SaveLoadManager {
   }
 
   /**
-   * Load auto-save
+   * Get all saves
    */
-  static loadAutoSave(): GameState | null {
+  static getAllSaves(): Array<{name: string; timestamp: number; turn: number; state: any}> {
     try {
-      const savedData = localStorage.getItem(this.AUTO_SAVE_KEY);
-
-      if (!savedData) {
-        return null;
-      }
-
-      const parsed = JSON.parse(savedData);
-      return parsed.state;
-    } catch (error) {
-      console.error('Failed to load auto-save:', error);
-      return null;
+      const data = localStorage.getItem(this.SAVE_KEY);
+      return data ? JSON.parse(data) : [];
+    } catch {
+      return [];
     }
-  }
-
-  /**
-   * Get list of all saves
-   */
-  static getAllSaves(): Array<{ name: string; timestamp: number; turn: number }> {
-    const saves: Array<{ name: string; timestamp: number; turn: number }> = [];
-
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-
-      if (key && key.startsWith(this.SAVE_KEY_PREFIX)) {
-        try {
-          const savedData = localStorage.getItem(key);
-          if (savedData) {
-            const parsed = JSON.parse(savedData);
-            saves.push({
-              name: key.replace(this.SAVE_KEY_PREFIX, ''),
-              timestamp: parsed.timestamp,
-              turn: parsed.state.turn
-            });
-          }
-        } catch (error) {
-          console.error('Error parsing save:', error);
-        }
-      }
-    }
-
-    return saves.sort((a, b) => b.timestamp - a.timestamp);
   }
 
   /**
@@ -121,55 +77,73 @@ export class SaveLoadManager {
    */
   static deleteSave(saveName: string): boolean {
     try {
-      const saveKey = this.SAVE_KEY_PREFIX + saveName;
-      localStorage.removeItem(saveKey);
+      const saves = this.getAllSaves();
+      const filtered = saves.filter(s => s.name !== saveName);
+      localStorage.setItem(this.SAVE_KEY, JSON.stringify(filtered));
       return true;
-    } catch (error) {
-      console.error('Failed to delete save:', error);
+    } catch {
       return false;
     }
   }
 
   /**
-   * Export save to file (download)
+   * Auto-save (called each turn)
    */
-  static exportSave(state: GameState, filename: string = 'save.json'): void {
-    const saveData = {
-      state,
-      timestamp: Date.now(),
-      version: '1.0.0'
-    };
+  static autoSave(state: GameState): void {
+    this.saveGame(state, `autosave_turn_${state.turn}`);
+  }
 
-    const blob = new Blob([JSON.stringify(saveData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
+  /**
+   * Serialize game state for storage
+   */
+  private static serializeState(state: GameState): string {
+    return JSON.stringify(state);
+  }
+
+  /**
+   * Deserialize game state from storage
+   */
+  private static deserializeState(data: string): GameState {
+    return JSON.parse(data) as GameState;
+  }
+
+  /**
+   * Export save to file
+   */
+  static exportSave(saveName: string): void {
+    const save = this.getAllSaves().find(s => s.name === saveName);
+    if (!save) return;
+
+    const dataStr = JSON.stringify(save, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+
     const link = document.createElement('a');
     link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
+    link.download = `${saveName}.json`;
     link.click();
-    document.body.removeChild(link);
+
     URL.revokeObjectURL(url);
   }
 
   /**
    * Import save from file
    */
-  static importSave(file: File): Promise<GameState> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
+  static importSave(file: File, callback: (success: boolean) => void): void {
+    const reader = new FileReader();
 
-      reader.onload = (e) => {
-        try {
-          const content = e.target?.result as string;
-          const parsed = JSON.parse(content);
-          resolve(parsed.state);
-        } catch (error) {
-          reject(new Error('Failed to parse save file'));
-        }
-      };
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target?.result as string);
+        const saves = this.getAllSaves();
+        saves.push(data);
+        localStorage.setItem(this.SAVE_KEY, JSON.stringify(saves));
+        callback(true);
+      } catch {
+        callback(false);
+      }
+    };
 
-      reader.onerror = () => reject(new Error('Failed to read file'));
-      reader.readAsText(file);
-    });
+    reader.readAsText(file);
   }
 }

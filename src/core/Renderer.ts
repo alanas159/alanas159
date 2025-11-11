@@ -416,14 +416,32 @@ export class Renderer {
   }
 
   private renderCities(state: GameState) {
+    const currentPlayer = state.players.find(p => p.id === state.currentPlayerId);
+
     state.players.forEach(player => {
       player.cities.forEach(city => {
-        this.renderCity(city, player.civilizationId);
+        const isOwn = player.id === state.currentPlayerId;
+
+        let relation: 'own' | 'ally' | 'enemy' | 'neutral' = 'neutral';
+        if (isOwn) {
+          relation = 'own';
+        } else if (currentPlayer) {
+          const diplomacyRelation = state.diplomacyManager.getRelation(currentPlayer.id, player.id);
+          if (diplomacyRelation === 'war') {
+            relation = 'enemy';
+          } else if (diplomacyRelation === 'allied') {
+            relation = 'ally';
+          } else {
+            relation = 'neutral';
+          }
+        }
+
+        this.renderCity(city, player.civilizationId, relation);
       });
     });
   }
 
-  private renderCity(city: City, civId: string) {
+  private renderCity(city: City, civId: string, relation: 'own' | 'ally' | 'enemy' | 'neutral' = 'own') {
     const screenX = city.x * this.tileSize + this.offsetX;
     const screenY = city.y * this.tileSize + this.offsetY;
     const centerX = screenX + this.tileSize / 2;
@@ -575,9 +593,18 @@ export class Renderer {
 
     this.ctx.restore(); // Restore context (remove shadow)
 
-    // Black border for definition
-    this.ctx.strokeStyle = '#000';
-    this.ctx.lineWidth = 2;
+    // Diplomatic relation border
+    let borderColor = '#000';
+    let borderWidth = 2;
+    if (relation !== 'own') {
+      borderWidth = 3;
+      if (relation === 'ally') borderColor = '#00ff00'; // green
+      if (relation === 'enemy') borderColor = '#ff0000'; // red
+      if (relation === 'neutral') borderColor = '#888888'; // gray
+    }
+
+    this.ctx.strokeStyle = borderColor;
+    this.ctx.lineWidth = borderWidth;
     this.ctx.strokeRect(
       centerX - citySize / 2,
       centerY - citySize / 2,
@@ -611,15 +638,33 @@ export class Renderer {
   }
 
   private renderUnits(state: GameState) {
+    const currentPlayer = state.players.find(p => p.id === state.currentPlayerId);
+
     state.players.forEach(player => {
       player.units.forEach(unit => {
         const isSelected = state.selectedUnit?.id === unit.id;
-        this.renderUnit(unit, player.civilizationId, isSelected);
+        const isOwn = player.id === state.currentPlayerId;
+
+        let relation: 'own' | 'ally' | 'enemy' | 'neutral' = 'neutral';
+        if (isOwn) {
+          relation = 'own';
+        } else if (currentPlayer) {
+          const diplomacyRelation = state.diplomacyManager.getRelation(currentPlayer.id, player.id);
+          if (diplomacyRelation === 'war') {
+            relation = 'enemy';
+          } else if (diplomacyRelation === 'allied') {
+            relation = 'ally';
+          } else {
+            relation = 'neutral';
+          }
+        }
+
+        this.renderUnit(unit, player.civilizationId, isSelected, relation);
       });
     });
   }
 
-  private renderUnit(unit: Unit, civId: string, isSelected: boolean = false) {
+  private renderUnit(unit: Unit, civId: string, isSelected: boolean = false, relation: 'own' | 'ally' | 'enemy' | 'neutral' = 'own') {
     // Get interpolated position if unit is animating
     const pos = this.getUnitRenderPosition(unit);
     const screenX = pos.x * this.tileSize + this.offsetX;
@@ -628,6 +673,27 @@ export class Renderer {
     // Check for attack flash
     const attackFlash = this.attackFlashes.get(unit.id);
     const isFlashing = attackFlash && (Date.now() - attackFlash) < 500;
+
+    // Diplomatic relation indicator ring (for non-own units)
+    if (relation !== 'own' && this.tileSize >= 24) {
+      let ringColor = '#888'; // neutral gray
+      if (relation === 'ally') ringColor = '#00ff00'; // green
+      if (relation === 'enemy') ringColor = '#ff0000'; // red
+
+      this.ctx.strokeStyle = ringColor;
+      this.ctx.lineWidth = 2;
+      this.ctx.setLineDash([4, 4]); // Dashed line
+      this.ctx.beginPath();
+      this.ctx.arc(
+        screenX + this.tileSize / 2,
+        screenY + this.tileSize / 2,
+        this.tileSize * 0.42,
+        0,
+        Math.PI * 2
+      );
+      this.ctx.stroke();
+      this.ctx.setLineDash([]); // Reset dash
+    }
 
     // Selection glow effect (pulsing)
     if (isSelected) {
