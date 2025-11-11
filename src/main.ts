@@ -259,16 +259,15 @@ class EmpiresEternalGame {
       return;
     }
 
-    // Ask which unit to recruit
-    const unitType = prompt('Recruit: warrior, archer, spearman, cavalry, swordsman, siege');
-    if (unitType && ['warrior', 'archer', 'spearman', 'cavalry', 'swordsman', 'siege'].includes(unitType)) {
-      const success = this.gameState.recruitUnit(selectedCity, unitType as any);
+    // Show unit recruitment UI
+    this.uiManager.showUnitRecruitment(selectedCity, currentPlayer, (unitType) => {
+      const success = this.gameState!.recruitUnit(selectedCity!, unitType);
 
       // If recruitment failed, show requirements
       if (!success) {
-        this.uiManager.showRecruitUnitRequirements(currentPlayer, selectedCity, unitType as any);
+        this.uiManager.showRecruitUnitRequirements(currentPlayer, selectedCity!, unitType);
       }
-    }
+    });
   }
 
   private handleResearch() {

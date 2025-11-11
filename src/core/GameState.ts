@@ -784,11 +784,48 @@ export class GameStateManager {
   selectTile(x: number, y: number) {
     this.state.selectedTile = { x, y };
 
-    // Also set selected unit if there's a unit on this tile
     const tile = this.getTile(x, y);
+    const currentPlayer = this.getCurrentPlayer();
+
+    // Check if there's a unit on this tile
     if (tile?.unitId) {
-      // Find the unit that belongs to the current player
-      const currentPlayer = this.getCurrentPlayer();
+      // First check if it's an enemy unit and we have a unit selected
+      const allPlayers = this.state.players;
+      let enemyUnit: Unit | null = null;
+
+      for (const player of allPlayers) {
+        if (player.id !== currentPlayer.id) {
+          const unit = player.units.find(u => u.id === tile.unitId);
+          if (unit) {
+            enemyUnit = unit;
+            break;
+          }
+        }
+      }
+
+      if (enemyUnit && this.state.selectedUnit &&
+          this.state.selectedUnit.ownerId === currentPlayer.id &&
+          !this.state.selectedUnit.hasActed) {
+        // Try to attack the enemy unit
+        const defenderOwner = this.state.players.find(p => p.id === enemyUnit.ownerId);
+
+        // Auto-declare war if not already at war
+        if (defenderOwner) {
+          const diplomacyManager = this.state.diplomacyManager;
+          const relation = diplomacyManager.getRelation(currentPlayer.id, defenderOwner.id);
+
+          if (relation !== 'war') {
+            diplomacyManager.declareWar(currentPlayer.id, defenderOwner.id);
+            this.addNotification(`War declared on ${defenderOwner.civilizationId}!`, 'warning');
+          }
+        }
+
+        // Attempt attack
+        this.attackUnit(this.state.selectedUnit, enemyUnit);
+        return; // Don't proceed with selection logic
+      }
+
+      // If it's our own unit, select it
       const unit = currentPlayer.units.find(u => u.id === tile.unitId);
       if (unit) {
         this.state.selectedUnit = unit;
@@ -798,7 +835,6 @@ export class GameStateManager {
     } else {
       // Check if we should move selected unit to this tile
       if (this.state.selectedUnit) {
-        const currentPlayer = this.getCurrentPlayer();
         if (this.state.selectedUnit.ownerId === currentPlayer.id &&
             !this.state.selectedUnit.hasActed) {
           // Try to move the unit
@@ -810,7 +846,6 @@ export class GameStateManager {
 
     // Set selected city if there's a city on this tile
     if (tile?.cityId) {
-      const currentPlayer = this.getCurrentPlayer();
       const city = currentPlayer.cities.find(c => c.id === tile.cityId);
       if (city) {
         this.state.selectedCity = city;

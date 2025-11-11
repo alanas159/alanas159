@@ -412,32 +412,178 @@ export class Renderer {
   private renderCity(city: City, civId: string) {
     const screenX = city.x * this.tileSize + this.offsetX;
     const screenY = city.y * this.tileSize + this.offsetY;
+    const centerX = screenX + this.tileSize / 2;
+    const centerY = screenY + this.tileSize / 2;
 
-    // Draw city as a square
-    this.ctx.fillStyle = city.isCapital ? '#ffd700' : '#d4af37';
-    this.ctx.fillRect(
-      screenX + this.tileSize * 0.25,
-      screenY + this.tileSize * 0.25,
-      this.tileSize * 0.5,
-      this.tileSize * 0.5
-    );
+    // City base size scales with population
+    const popFactor = Math.min(city.population / 20, 1.5); // Max 1.5x size
+    const citySize = this.tileSize * (0.6 + popFactor * 0.2);
 
-    // Draw city border
+    if (city.isCapital) {
+      // Capital: Elaborate design with central tower and walls
+      // Outer walls (stone)
+      this.ctx.fillStyle = '#8b7355';
+      this.ctx.fillRect(
+        centerX - citySize / 2 - 3,
+        centerY - citySize / 2 - 3,
+        citySize + 6,
+        citySize + 6
+      );
+
+      // Wall battlements
+      for (let i = 0; i < 4; i++) {
+        const bx = centerX - citySize / 2 - 3 + i * ((citySize + 6) / 3);
+        this.ctx.fillRect(bx, centerY - citySize / 2 - 6, (citySize + 6) / 3 / 2, 3);
+        this.ctx.fillRect(bx, centerY + citySize / 2 + 3, (citySize + 6) / 3 / 2, 3);
+      }
+
+      // Main palace/castle building (gradient)
+      const gradient = this.ctx.createLinearGradient(
+        centerX - citySize / 2,
+        centerY - citySize / 2,
+        centerX + citySize / 2,
+        centerY + citySize / 2
+      );
+      gradient.addColorStop(0, '#ffd700');
+      gradient.addColorStop(0.5, '#d4af37');
+      gradient.addColorStop(1, '#aa8c2e');
+
+      this.ctx.fillStyle = gradient;
+      this.ctx.fillRect(
+        centerX - citySize / 2,
+        centerY - citySize / 2,
+        citySize,
+        citySize
+      );
+
+      // Central tower (taller)
+      this.ctx.fillStyle = '#ffd700';
+      const towerWidth = citySize * 0.3;
+      const towerHeight = citySize * 0.5;
+      this.ctx.fillRect(
+        centerX - towerWidth / 2,
+        centerY - citySize / 2 - towerHeight,
+        towerWidth,
+        towerHeight
+      );
+
+      // Tower roof (triangle)
+      this.ctx.fillStyle = '#8b0000';
+      this.ctx.beginPath();
+      this.ctx.moveTo(centerX, centerY - citySize / 2 - towerHeight - towerWidth / 2);
+      this.ctx.lineTo(centerX - towerWidth / 2 - 2, centerY - citySize / 2 - towerHeight);
+      this.ctx.lineTo(centerX + towerWidth / 2 + 2, centerY - citySize / 2 - towerHeight);
+      this.ctx.closePath();
+      this.ctx.fill();
+
+      // Windows on tower
+      if (this.tileSize >= 32) {
+        this.ctx.fillStyle = '#ffeb3b';
+        for (let i = 0; i < 3; i++) {
+          this.ctx.fillRect(
+            centerX - towerWidth / 4,
+            centerY - citySize / 2 - towerHeight + i * (towerHeight / 4),
+            towerWidth / 2,
+            towerHeight / 8
+          );
+        }
+      }
+
+      // Crown icon for capital
+      if (this.tileSize >= 24) {
+        this.ctx.fillStyle = '#ffd700';
+        this.ctx.font = `${Math.floor(this.tileSize * 0.4)}px Arial`;
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        this.ctx.fillText('👑', centerX, centerY);
+      }
+
+    } else {
+      // Regular city: Smaller buildings cluster
+      // Base building (gradient)
+      const gradient = this.ctx.createLinearGradient(
+        centerX - citySize / 2,
+        centerY - citySize / 2,
+        centerX + citySize / 2,
+        centerY + citySize / 2
+      );
+      gradient.addColorStop(0, '#d4af37');
+      gradient.addColorStop(0.5, '#b8941e');
+      gradient.addColorStop(1, '#8b7355');
+
+      this.ctx.fillStyle = gradient;
+      this.ctx.fillRect(
+        centerX - citySize / 2,
+        centerY - citySize / 2,
+        citySize,
+        citySize
+      );
+
+      // Multiple small buildings
+      const buildingCount = Math.min(Math.floor(city.population / 3) + 2, 6);
+      this.ctx.fillStyle = '#a0826d';
+
+      for (let i = 0; i < buildingCount; i++) {
+        const angle = (i / buildingCount) * Math.PI * 2;
+        const bx = centerX + Math.cos(angle) * (citySize * 0.2);
+        const by = centerY + Math.sin(angle) * (citySize * 0.2);
+        const bSize = citySize * 0.15;
+
+        this.ctx.fillRect(bx - bSize / 2, by - bSize / 2, bSize, bSize);
+
+        // Tiny roofs
+        this.ctx.fillStyle = '#8b4513';
+        this.ctx.beginPath();
+        this.ctx.moveTo(bx, by - bSize / 2 - bSize * 0.3);
+        this.ctx.lineTo(bx - bSize / 2, by - bSize / 2);
+        this.ctx.lineTo(bx + bSize / 2, by - bSize / 2);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.fillStyle = '#a0826d';
+      }
+
+      // City center icon
+      if (this.tileSize >= 24) {
+        this.ctx.fillStyle = '#fff';
+        this.ctx.font = `${Math.floor(this.tileSize * 0.35)}px Arial`;
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        this.ctx.fillText('🏛️', centerX, centerY);
+      }
+    }
+
+    // Black border for definition
     this.ctx.strokeStyle = '#000';
     this.ctx.lineWidth = 2;
     this.ctx.strokeRect(
-      screenX + this.tileSize * 0.25,
-      screenY + this.tileSize * 0.25,
-      this.tileSize * 0.5,
-      this.tileSize * 0.5
+      centerX - citySize / 2,
+      centerY - citySize / 2,
+      citySize,
+      citySize
     );
 
-    // Draw city name if zoom is high enough
+    // City name with shadow
     if (this.tileSize >= 24) {
-      this.ctx.fillStyle = '#ffffff';
-      this.ctx.font = `${Math.floor(this.tileSize * 0.3)}px Georgia`;
+      // Shadow
+      this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+      this.ctx.font = `bold ${Math.floor(this.tileSize * 0.32)}px Georgia`;
       this.ctx.textAlign = 'center';
-      this.ctx.fillText(city.name, screenX + this.tileSize / 2, screenY - 5);
+      this.ctx.fillText(city.name, centerX + 1, screenY - 8 + 1);
+
+      // Text
+      this.ctx.fillStyle = city.isCapital ? '#ffd700' : '#ffffff';
+      this.ctx.fillText(city.name, centerX, screenY - 8);
+    }
+
+    // Population indicator below city
+    if (this.tileSize >= 28) {
+      this.ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+      this.ctx.fillRect(centerX - 18, screenY + this.tileSize - 12, 36, 10);
+
+      this.ctx.fillStyle = '#4ade80';
+      this.ctx.font = `${Math.floor(this.tileSize * 0.22)}px Arial`;
+      this.ctx.textAlign = 'center';
+      this.ctx.fillText(`👥 ${city.population}`, centerX, screenY + this.tileSize - 4);
     }
   }
 
